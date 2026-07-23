@@ -1,0 +1,171 @@
+# Fulfillment and Shipping Rules
+
+## 1. Fulfillment Sequence
+
+The valid physical sequence is:
+
+```text
+Reserved -> Picked -> Packed -> Shipped -> Delivered
+```
+
+Reversal before shipment is explicit:
+
+```text
+Picked -> Available
+Packed -> Picked -> Available
+```
+
+Shipped stock cannot be reversed through reservation cancellation.
+
+## 2. Picking
+
+Picking moves confirmed reserved quantity into the picked bucket.
+
+Rules:
+
+- Reservation must be confirmed and open.
+- Pick quantity must be positive.
+- Pick quantity cannot exceed the reservation’s currently reserved quantity.
+- Inventory balance, reservation projection, movement, and history update atomically.
+- Partial picking is allowed.
+- Repeating the same pick operation has no additional effect.
+
+## 3. Returning Picked Stock
+
+A return-to-stock action moves picked quantity directly to available after the warehouse confirms that the item has returned to an available condition.
+
+Rules:
+
+- Quantity cannot exceed currently picked quantity.
+- A reason and actor are required.
+- It creates a compensating movement and reservation transition.
+- It does not cancel the order item automatically; the quantity becomes outstanding allocation again unless separately cancelled.
+
+## 4. Packing and Unpacking
+
+Packing moves picked quantity into packed.
+
+Rules:
+
+- Quantity must be positive and cannot exceed picked quantity.
+- Partial packing is allowed.
+- Packed stock is committed and unavailable to other orders.
+
+Unpacking moves packed quantity back to picked:
+
+- Quantity cannot exceed packed quantity not already assigned to a confirmed shipment.
+- A later return-to-stock action is required before it becomes available.
+
+## 5. Shipment Composition
+
+Shipments are created only from packed quantities.
+
+Rules:
+
+- Every shipment belongs to exactly one warehouse.
+- Every shipment item references an order item and positive quantity.
+- One order can have multiple shipments.
+- One order item can be split across shipments.
+- One shipment can contain multiple order items from the same warehouse.
+- Shipment quantity cannot exceed eligible packed quantity.
+- Creating a shipment does not reduce warehouse on-hand stock.
+
+## 6. Submission and Provider Attempts
+
+A pending shipment is submitted asynchronously.
+
+Rules:
+
+- The processing command discovers eligible pending shipments.
+- A queued job calls the provider outside database transactions that lock inventory.
+- Every provider request uses a stable request key.
+- Provider attempts are recorded independently from the shipment’s business state.
+- A duplicate job must not create another external shipment.
+
+## 7. Provider Outcomes
+
+### Immediate or Delayed Success
+
+The provider may accept immediately or confirm later. Inventory is deducted only when carrier handoff/shipment is confirmed.
+
+### Timeout
+
+A timeout means the external outcome is unknown:
+
+- Shipment becomes submission-uncertain.
+- Packed and on-hand balances do not change.
+- Retry or reconciliation reuses the same provider request key.
+- A later callback may resolve the state.
+
+### Permanent Failure
+
+- The provider attempt is permanently failed.
+- Warehouse inventory remains packed.
+- No inventory deduction occurs.
+- A new shipment attempt may be created.
+- Releasing the stock requires explicit unpack and return operations.
+
+## 8. Shipment Confirmation
+
+A valid shipment-confirmed event moves stock:
+
+```text
+Warehouse / Packed -> External / Shipped
+```
+
+The confirmation transaction:
+
+1. Claims the provider event.
+2. Locks the shipment, affected reservations, and inventory balance rows.
+3. Validates the shipment is eligible.
+4. Appends the canonical movement.
+5. Reduces packed projection quantity.
+6. Increases shipped progress on shipment, reservation, and order-item projections.
+7. Appends transition history.
+8. Marks the event processed.
+9. Commits atomically.
+
+Repeating confirmation cannot deduct stock twice.
+
+## 9. Delivery
+
+Delivery is a fulfillment event, not a warehouse inventory movement.
+
+Rules:
+
+- Delivered quantity must already be shipped.
+- Delivery may be partial.
+- Duplicate delivery events do not repeat effects.
+- An order becomes delivered only when every shipped quantity is delivered.
+- A delivery failure does not place goods back into warehouse inventory.
+
+## 10. Completion Rules
+
+An order item is fulfilled when:
+
+```text
+shipped_quantity + cancelled_quantity = ordered_quantity
+```
+
+A reservation closes when:
+
+```text
+reserved_quantity + picked_quantity + packed_quantity = 0
+```
+
+and all quantity originally handled by it is either shipped or released.
+
+An order is shipped when every non-cancelled item is fully shipped. It is delivered when all shipped quantities are delivered.
+
+## 11. Returns Boundary
+
+A production returns workflow would require:
+
+- Return merchandise authorization.
+- Carrier return tracking.
+- Warehouse receiving.
+- Inspection and condition grading.
+- Quarantine or damage handling.
+- Restocking through a new receipt movement.
+
+This workflow is a documented future improvement and is not part of the core challenge implementation.

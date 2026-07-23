@@ -1,0 +1,8 @@
+d1:c
+d2:a
+d3: i want b but i want a way to be explicit that it's not full reservation but partial reservation and that the 4 remaing will still need to be fullfilled somehow (don't really know how to do that yet)
+
+d4: i really like choice c but i'm afraid it might be too complicated for me to impement  so let's keep this untill we come to implementation and then we can decide if we want to go with choice c or not  depending on the time we have left then
+
+d5:number a
+d6:i don't understand what is transfer where to from ???
