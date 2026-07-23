@@ -1,76 +1,97 @@
 # Implementation Roadmap
 
-This roadmap converts the agreed [Business Rules](../business-rules/README.md) into reviewable, commit-sized implementation tasks.
+This roadmap converts the agreed [Business Rules](../business-rules/README.md) into reviewable, dependency-ordered implementation tasks.
+
+Testing follows the [Risk-Based Testing Strategy](testing-strategy.md): smoke tests cover wiring and ordinary interfaces, while focused automated tests are reserved for important inventory, concurrency, idempotency, shipment, and provider behavior.
 
 ## Delivery Strategy
 
-Correctness is built from the database outward:
+Correctness is built from the database outward while external boundaries and required submission documents are de-risked early:
 
 ```text
-Schema and invariants
+Project/test foundation + living submission documents
+    -> domain vocabulary + provider contract/deterministic fake
+    -> schema and reference data
     -> canonical movements and balance projections
-    -> orders and reservations
-    -> physical fulfillment
-    -> provider reliability
-    -> authenticated operational UI
-    -> hardening and submission
+    -> orders, progress, reservations, release, and backorders
+    -> physical fulfillment and shipment preparation
+    -> provider integration, jobs, callbacks, and recovery
+    -> operational query services and minimal Blade UI
+    -> risk audit, evidence, video, and repository delivery
 ```
 
-Frontend polish and optional features must not start before the core correctness gates pass.
+No task may call a class, job, action, query service, or document that is planned only in a later task.
+
+## Priority Levels
+
+Each task has one of these priorities:
+
+- **Submission-critical:** required to prove the challenge’s inventory, concurrency, shipment, provider, documentation, or delivery requirements.
+- **Supporting:** part of the agreed solution and useful for the walkthrough, but may be simplified after an explicit time review once every submission-critical task passes.
+- **Optional/stretch:** begins only after all required deliverables, evidence, and walkthrough preparation pass.
+
+Supporting work is not silently dropped. Any reduction must be recorded in the decision register and final known limitations.
+
+Supporting tasks encountered before Phase 5 may be parked while the submission-critical path continues. Record them in the working checklist, then explicitly implement, simplify, or defer them at the post-Phase-5 time review.
 
 ## Phase Index
 
-| Phase | Outcome | Required |
+| Phase | Outcome | Priority |
 | --- | --- | --- |
-| [1. Foundation and Schema](phase-01-foundation-and-schema.md) | Domain vocabulary, complete schema, models, factories, and demo data | Yes |
-| [2. Inventory Ledger](phase-02-inventory-ledger.md) | Idempotent receipts, adjustments, transfers, movements, and projections | Yes |
-| [3. Orders and Reservations](phase-03-orders-and-reservations.md) | Partial allocation, release, expiration, and automatic backorder processing | Yes |
-| [4. Fulfillment](phase-04-fulfillment.md) | Pick, return, pack, unpack, shipment preparation, and progress | Yes |
-| [5. Shipping Reliability](phase-05-shipping-reliability.md) | Provider abstraction, jobs, timeouts, signed callbacks, and duplicate safety | Yes |
-| [6. Interfaces and Demo](phase-06-interfaces-and-demo.md) | Admin authentication, server-rendered operational UI, and demo controls | Yes |
-| [7. Hardening and Submission](phase-07-hardening-and-submission.md) | Scenario proof, final test matrix, docs, evidence, and video | Yes |
+| [1. Foundation and Schema](phase-01-foundation-and-schema.md) | Living submission docs, MySQL test harness, early provider boundary, schema, factories, and reference seed data | Submission-critical |
+| [2. Inventory Ledger](phase-02-inventory-ledger.md) | Idempotent receipts, adjustments, transfers, movements, projections, and concurrency proof | Submission-critical |
+| [3. Orders and Reservations](phase-03-orders-and-reservations.md) | Shared progress calculation, partial allocation, release, edits, expiration, and backorder recovery | Submission-critical |
+| [4. Fulfillment](phase-04-fulfillment.md) | Pick, return, pack, unpack, shipment preparation, and conservation | Submission-critical |
+| [5. Shipping Reliability](phase-05-shipping-reliability.md) | Thin jobs/commands over provider actions, timeouts, signed callbacks, and duplicate safety | Submission-critical |
+| [6. Interfaces and Demo](phase-06-interfaces-and-demo.md) | Minimal authenticated Blade workflows, operational reports, scenario data, and demo controls | Mixed |
+| [7. Hardening and Submission](phase-07-hardening-and-submission.md) | Risk-based proof, finalized docs, evidence, video, and repository handoff | Submission-critical |
 
 ## Commit Rules
 
-Each numbered task is intended to become one commit.
+Each numbered task is intended to become one independently reviewable commit.
 
 1. Use the proposed commit subject or a similarly specific imperative subject.
-2. Keep schema, model relationships, factory support, and focused tests for one concern together.
-3. Keep action code and its business-rule tests in the same commit.
-4. Do not mix UI polish with domain behavior.
+2. Keep schema, model relationships, and factory support for one concern together.
+3. Keep important action code and its focused risk test in the same commit.
+4. Do not mix presentation polish with domain behavior.
 5. Do not introduce a dependency without explicit approval.
 6. Generate Laravel files with `php artisan make:* --no-interaction`.
 7. Run the narrowest relevant tests while working.
 8. Run `vendor/bin/pint --dirty --format agent` after modifying PHP.
 9. Run `php artisan test --compact` at every phase gate.
-10. Update business rules and the decision register in the same commit as any approved rule change.
-11. Avoid WIP commits on the submission branch.
+10. Update the business rules and decision register with any approved rule change.
+11. Keep `README.md`, `docs/ARCHITECTURE.md`, and `docs/AI_USAGE.md` current as implementation evolves; Phase 7 finalizes them rather than reconstructing them.
+12. Avoid WIP commits on the submission branch.
 
 ## Definition of a Completed Commit
 
 A task is complete only when:
 
 - The stated behavior works.
-- Failure and boundary cases have tests.
+- Important correctness or reliability risks have a focused automated test.
+- Ordinary CRUD, wiring, and interface changes are added to the smoke suite or verified manually.
 - No unrelated files are changed.
 - Migrations roll forward and backward where safe.
 - PHP formatting passes.
+- A short documentation update is included when setup, architecture, AI usage, assumptions, or limitations changed.
 - The commit can be explained and demonstrated independently.
 
-## Critical Path
+The plan does not require a unit test for every class or branch, and it does not target a coverage percentage.
 
-The minimum acceptable submission follows every required task in Phases 1–7, excluding tasks explicitly marked optional or stretch.
+## Critical Path and Safe Time Review
 
-Core backend completion occurs after Phase 5. The system should already prove:
+The first safe time review happens after Phase 5. At that point the backend must already prove:
 
-- Concurrent reservation safety.
+- Concurrent final-unit reservation safety.
 - Partial allocation and recovery.
 - Ledger/projection atomicity.
-- Pick and pack conservation.
-- Shipment retry and timeout safety.
+- Reservation release.
+- Pick/pack quantity conservation.
+- Shipment command and queued-job processing.
+- Provider success, permanent failure, timeout, delayed confirmation, and duplicate callback behavior.
 - Duplicate and out-of-order callback safety.
 
-Only then should significant UI work begin.
+Phase 6 then builds the minimum UI and reports needed to operate and explain those capabilities. Presentation-only dashboard polish and broad catalog convenience are supporting work.
 
 ## Optional and Stretch Work
 
@@ -83,9 +104,10 @@ Optional work is deliberately isolated:
 
 Do not begin it unless:
 
-1. All required tests pass.
+1. All submission-critical tests pass.
 2. Required documentation is current.
-3. The remaining delivery time has been reviewed.
+3. Evidence and the video outline exist.
+4. The remaining delivery time has been reviewed.
 
 ## Working Checklist
 
@@ -94,8 +116,10 @@ Do not begin it unless:
 - [ ] Phase 3 gate passed
 - [ ] Phase 4 gate passed
 - [ ] Phase 5 gate passed
+- [ ] Safe time review completed
 - [ ] Phase 6 gate passed
 - [ ] Phase 7 gate passed
 - [ ] Required screenshot captured
 - [ ] Video recorded and linked
 - [ ] AI usage accurately documented
+- [ ] GitHub/GitLab repository URL verified

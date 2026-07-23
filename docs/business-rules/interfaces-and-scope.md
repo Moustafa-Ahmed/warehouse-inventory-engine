@@ -57,7 +57,9 @@ Planned screens:
 13. Provider-event inbox.
 14. Local demonstration controls for deterministic provider outcomes.
 
-Additional presentation-oriented screens may be added only after the core rules and tests pass.
+The submission-critical UI is the minimum inventory, order/reservation, fulfillment/shipment, provider-event, reporting, and demonstration flow. Catalog create/edit convenience and the consolidated dashboard are supporting work: they remain planned, but may be simplified after the explicit post-Phase-5 time review because reference data and direct operational pages already support the core demonstration.
+
+Additional presentation-oriented screens may be added only after the submission-critical rules, tests, documents, evidence plan, and time review pass.
 
 ## 3. Required HTTP Boundaries
 

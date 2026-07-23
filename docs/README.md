@@ -27,13 +27,14 @@ This directory is the navigation hub for the challenge documentation. The busine
 | Document | Purpose |
 | --- | --- |
 | [Roadmap](implementation-plan/README.md) | Phase order, delivery gates, and commit rules |
-| [Phase 1 — Foundation and Schema](implementation-plan/phase-01-foundation-and-schema.md) | Domain vocabulary, tables, models, constraints, factories, and seed data |
+| [Testing Strategy](implementation-plan/testing-strategy.md) | Risk-based smoke, critical integration, concurrency, and focused unit coverage |
+| [Phase 1 — Foundation and Schema](implementation-plan/phase-01-foundation-and-schema.md) | Living submission docs, MySQL test harness, early provider boundary, schema, factories, and reference data |
 | [Phase 2 — Inventory Ledger](implementation-plan/phase-02-inventory-ledger.md) | Idempotent operations, movements, projections, receipts, adjustments, and transfers |
-| [Phase 3 — Orders and Reservations](implementation-plan/phase-03-orders-and-reservations.md) | Orders, partial reservation, expiration, and backorder allocation |
-| [Phase 4 — Fulfillment](implementation-plan/phase-04-fulfillment.md) | Pick, return, pack, unpack, shipment preparation, and completion |
-| [Phase 5 — Shipping Reliability](implementation-plan/phase-05-shipping-reliability.md) | Provider abstraction, jobs, timeouts, webhooks, callbacks, and scheduling |
-| [Phase 6 — Interfaces and Demonstration](implementation-plan/phase-06-interfaces-and-demo.md) | Authentication, Blade UI, web forms, and demonstration tooling |
-| [Phase 7 — Hardening and Submission](implementation-plan/phase-07-hardening-and-submission.md) | Test matrix, optional reconciliation, required docs, evidence, and video |
+| [Phase 3 — Orders and Reservations](implementation-plan/phase-03-orders-and-reservations.md) | Progress calculation, orders, partial reservation, release, edits, expiration, and backorders |
+| [Phase 4 — Fulfillment](implementation-plan/phase-04-fulfillment.md) | Pick, return, pack, unpack, partial shipment preparation, and conservation |
+| [Phase 5 — Shipping Reliability](implementation-plan/phase-05-shipping-reliability.md) | Provider actions, thin jobs/commands, timeouts, signed callbacks, mock behavior, and scheduling |
+| [Phase 6 — Interfaces and Demonstration](implementation-plan/phase-06-interfaces-and-demo.md) | Minimal Blade workflows, operational query services, reports, scenario data, and demo controls |
+| [Phase 7 — Hardening and Submission](implementation-plan/phase-07-hardening-and-submission.md) | Risk evidence, finalized docs, clean verification, video, and repository handoff |
 
 ## Design Exploration
 
@@ -43,12 +44,12 @@ This directory is the navigation hub for the challenge documentation. The busine
 
 ## Required Submission Documents
 
-The following documents will be created or finalized during Phase 7:
+The root `README.md`, `docs/ARCHITECTURE.md`, and `docs/AI_USAGE.md` are created as living drafts in Phase 1, updated with the implementation, and finalized during Phase 7.
 
-- `README.md`
-- `docs/ARCHITECTURE.md`
-- `docs/AI_USAGE.md`
-- Passing-test screenshot
-- Video walkthrough link
+Phase 7 also adds:
+
+- Passing-test screenshot.
+- Video walkthrough link.
+- Verified GitHub/GitLab repository URL and reviewer access.
 
 The business-rules handbook and implementation plan are working design documents. If an agreed rule changes, update the decision register and every affected document in the same commit.

@@ -1,6 +1,6 @@
 # Acceptance Scenarios
 
-These scenarios describe observable behavior. Detailed Pest tests will be written beside each implementation task.
+These scenarios describe observable behavior. They are evidence candidates, not a requirement for one automated test per scenario. The [Risk-Based Testing Strategy](../implementation-plan/testing-strategy.md) identifies the important risks that receive focused automated tests; secondary behavior may be covered by smoke tests or the walkthrough.
 
 ## 1. Concurrent Final-Unit Reservation
 

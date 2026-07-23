@@ -43,8 +43,9 @@ This register records the decisions made during the design workshop. “Accepted
 | D20 | Accepted | Use one authenticated administrator role with access to every operational feature. For challenge scope, that administrator performs the warehouse-operator actions; separate operational roles are future work. All operational web mutations require authentication and authorization. |
 | D21 | Accepted | Shipping-provider webhooks use HMAC verification over a timestamp and raw request body, with replay-window and event-ID checks. |
 | D22 | Optional | Add a read-only ledger-to-projection reconciliation command only after core work is complete. It reports drift and never silently corrects balances. |
-| D23 | Provisional | Demonstrate six focused live failure scenarios and show automated-test evidence for the remaining risks. Final video contents may change after the demo is complete. |
-| D24 | Provisional | Accept the documented core, stretch, and out-of-scope boundaries for now. Re-evaluate only through an explicit decision. |
+| D23 | Provisional | Demonstrate six focused live failure scenarios and use the small smoke/critical test suite plus explanation or manual evidence for other relevant behavior. Final video contents may change after the demo is complete. |
+| D24 | Provisional | Accept the documented core, stretch, and out-of-scope boundaries for now. Implement submission-critical work first. Supporting work remains planned but may be simplified only after an explicit time review, with the change recorded as a limitation. |
+| D25 | Accepted | Use a small risk-based Pest suite. Smoke tests cover application wiring, required pages, commands, and representative happy paths. Focused MySQL integration and concurrency tests cover inventory correctness, idempotency, rollback, reservations, shipment deduction, retries, and duplicate callbacks. Unit tests are limited to important pure calculations or state/outcome mapping; exhaustive per-class or per-branch coverage is not required. |
 
 ## Deferred Review Points
 

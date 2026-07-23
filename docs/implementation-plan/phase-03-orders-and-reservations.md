@@ -2,68 +2,152 @@
 
 ## Objective
 
-Implement order demand, immediate hard reservations, explicit partial results, expiration, releases, and automatic backorder recovery.
+Implement shared quantity calculation, order demand, immediate hard reservations, explicit partial results, release/edit behavior, expiration, and automatic backorder recovery in dependency order.
 
-## Commit P3.1 — `feat: create and edit order demand`
+## Commit P3.1 — `feat: calculate order item quantity progress`
+
+**Priority:** Submission-critical
+
+Scope:
+
+- Implement one pure order-item quantity/progress calculator.
+- Calculate ordered, cancelled, outstanding, reserved, picked, packed, shipped, and delivered relationships.
+- Keep allocation, fulfillment, and delivery as separate dimensions.
+- Enforce the quantity-conservation equation.
+- Add a small table-driven unit test for the important empty, partial, and terminal combinations.
+
+Done when:
+
+- Later order, reservation, fulfillment, shipment, and UI code can call one calculator.
+- No action needs temporary or duplicated progress formulas.
+- Partial allocation cannot be mistaken for partial shipment or delivery.
+
+## Commit P3.2 — `feat: create order demand`
+
+**Priority:** Submission-critical
 
 Scope:
 
 - Implement actions to create orders and order items.
-- Implement delta-based quantity edits.
-- Prevent reductions below shipped and cancelled quantity.
-- Reject reductions that require picked or packed reversal.
-- Recalculate allocation and fulfillment projections consistently.
-- Add tests for increases, eligible decreases, and invalid reductions.
+- Validate positive ordered quantities and product eligibility.
+- Initialize projections through the shared progress calculator.
+- Add factories for open, partial, and terminal order demand.
+- Add order creation to the representative smoke flow.
 
 Done when:
 
-- Existing commitments are not released and recreated during edits.
-- Quantity conservation holds after every valid edit.
+- One order can contain multiple product lines.
+- New demand begins entirely outstanding and conserves quantity.
 
-## Commit P3.2 — `feat: reserve available inventory with partial results`
+## Commit P3.3 — `feat: reserve available inventory with partial results`
+
+**Priority:** Submission-critical
 
 Scope:
 
-- Implement warehouse-scoped reservation action.
+- Implement the warehouse-scoped reservation action.
 - Lock the selected balance before calculating availability.
 - Allocate `min(available, outstanding)` quantity.
-- Return requested, allocated, remaining, and fully-allocated indicators.
+- Return requested, allocated, outstanding, and fully-allocated indicators.
 - Create no movement when zero can be allocated.
+- Recalculate progress using the shared calculator.
 - Update reservation, order item, ledger, projection, operation, and history atomically.
-- Add full, partial, zero, duplicate, and rollback tests.
+- Add focused critical tests for partial allocation, zero availability, idempotent replay, and rollback.
 
 Done when:
 
 - Partial allocation is explicit and queryable.
 - One quantity cannot be reserved twice.
-- Zero allocation does not create misleading stock movement.
+- Zero allocation does not create a misleading stock movement.
 
-## Commit P3.3 — `feat: release eligible reserved inventory`
+## Commit P3.4 — `feat: release and cancel eligible reserved inventory`
+
+**Priority:** Submission-critical
 
 Scope:
 
 - Implement partial and full reservation release.
 - Move only reserved quantity back to available.
+- Distinguish release-with-outstanding-demand from release-with-cancellation.
 - Require a reason and operation key.
-- Update outstanding order-item demand unless the quantity is also cancelled.
-- Make cancellation and release intent explicit.
-- Add tests for partial release, cancellation, over-release, and duplicate execution.
+- Recalculate order-item progress through the shared calculator.
+- Add focused critical tests for eligible release, committed-stage protection, and duplicate execution.
 
 Done when:
 
 - Picked, packed, and shipped quantities cannot be released through this action.
 - Released-but-not-cancelled demand becomes allocatable again.
+- Cancelled quantity no longer appears as outstanding demand.
 
-## Commit P3.4 — `feat: confirm and expire temporary reservations`
+## Commit P3.5 — `feat: edit order demand by quantity delta`
+
+**Priority:** Submission-critical
+
+Scope:
+
+- Implement delta-based quantity edits.
+- Treat an increase as new outstanding demand.
+- Use the existing release/cancellation action for an eligible decrease.
+- Prevent reductions below shipped and cancelled quantity.
+- Reject reductions that require picked or packed physical reversal.
+- Recalculate progress through the shared calculator.
+- Add one focused conservation scenario covering a valid delta and a reduction requiring physical reversal.
+
+Done when:
+
+- Existing commitments are not released and recreated during edits.
+- The edit action does not contain a second release implementation.
+- Quantity conservation holds after every valid edit.
+
+## Commit P3.6 — `feat: allocate outstanding order items after stock receipt`
+
+**Priority:** Submission-critical
+
+Scope:
+
+- Implement FIFO selection of eligible outstanding order items.
+- Implement `AllocateBackorderJob` as a thin adapter over the reservation action.
+- Implement `inventory:allocate-backorders`.
+- Wire stock receipt to dispatch the new job only after commit.
+- Keep the scheduled command as the recovery path if dispatch is lost.
+- Process bounded batches and remain safe under duplicate jobs.
+- Add one focused recovery test proving stock receipt completes the oldest eligible partial allocation without over-allocation.
+
+Done when:
+
+- New stock can complete a prior partial allocation.
+- The job exists before receipt dispatch is wired.
+- A lost immediate dispatch is recoverable by the command.
+- Duplicate allocator execution cannot over-allocate.
+
+## Commit P3.7 — `test: prove reservation concurrency and repeated execution`
+
+**Priority:** Submission-critical
+
+Scope:
+
+- Add a separate-connection MySQL test for two users reserving the final unit.
+- Add a concurrent duplicate-idempotency test.
+- Assert movement and history counts, not only final balances.
+
+Done when:
+
+- Exactly one competing operation consumes the final quantity.
+- Repeating the same intent does not create another effect.
+- Every tested race produces one valid, explainable final state.
+
+## Commit P3.8 — `feat: confirm and expire temporary reservations`
+
+**Priority:** Supporting
 
 Scope:
 
 - Implement temporary reservation confirmation.
 - Implement expiration action for eligible expired holds.
 - Add `reservations:expire` command that processes bounded batches.
-- Release stock using the normal movement and release rules.
+- Release stock through the existing release action.
 - Make command execution idempotent and safe under overlap.
-- Add time-controlled tests.
+- Add one time-controlled test proving an expired temporary hold releases once while a confirmed reservation remains.
 
 Done when:
 
@@ -71,42 +155,11 @@ Done when:
 - Repeated expiration runs do not release twice.
 - Expiration history and movements are complete.
 
-## Commit P3.5 — `feat: allocate outstanding order items`
-
-Scope:
-
-- Implement FIFO selection of eligible outstanding order items.
-- Implement `AllocateBackorderJob`.
-- Implement `inventory:allocate-backorders`.
-- Call the same reservation action used by other entry points.
-- Dispatch after stock receipt commit.
-- Process in bounded batches and remain safe under duplicate jobs.
-- Add priority, eligibility, partial, and recovery tests.
-
-Done when:
-
-- New stock can complete a prior partial allocation.
-- A lost immediate dispatch is recoverable by the command.
-- Duplicate allocator execution cannot over-allocate.
-
-## Commit P3.6 — `test: prove reservation races and retries`
-
-Scope:
-
-- Add separate-connection test for two users reserving the final unit.
-- Add concurrent duplicate-idempotency test.
-- Add order-edit versus reservation concurrency test.
-- Add expiration versus confirmation race test.
-- Assert movement and history counts, not only final balances.
-
-Done when:
-
-- Exactly one competing operation consumes the final quantity.
-- Every race produces one valid, explainable final state.
-
 ## Stretch Commit P3.S1 — `feat: allocate order items across warehouses`
 
-Begin only after all required gates pass and remaining time is approved.
+**Priority:** Optional/stretch
+
+Begin only after all submission-critical gates pass and remaining time is approved.
 
 Scope:
 
@@ -114,7 +167,7 @@ Scope:
 - Lock all candidate balances in deterministic order.
 - Create multiple warehouse reservations for one item.
 - Preserve explicit partial results.
-- Add multi-warehouse concurrency and partial-shipment tests.
+- Add one focused cross-warehouse concurrency scenario rather than exhaustive combinations.
 
 Done when:
 
@@ -123,9 +176,13 @@ Done when:
 
 ## Phase Gate
 
-- [ ] Full, partial, and zero reservation behavior passes.
-- [ ] Outstanding demand remains explicit.
-- [ ] Backorders recover through job and command paths.
-- [ ] Temporary expiration is safe and idempotent.
-- [ ] Final-unit concurrency test passes on MySQL.
-- [ ] Full tests and Pint pass.
+- [ ] One shared quantity/progress calculator is used by order and reservation actions
+- [ ] Full, partial, and zero reservation behavior passes
+- [ ] Release and cancellation do not touch physically progressed stock
+- [ ] Order edits reuse release behavior and conserve quantity
+- [ ] Outstanding demand remains explicit
+- [ ] Backorders recover through job and command paths wired after implementation
+- [ ] Supporting temporary confirmation/expiration is complete or explicitly recorded for the post-Phase-5 time review
+- [ ] Final-unit concurrency test passes on MySQL
+- [ ] README, architecture, and AI-usage documents are current
+- [ ] Smoke and critical tests plus Pint pass
