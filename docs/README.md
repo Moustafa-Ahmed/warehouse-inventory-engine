@@ -18,6 +18,7 @@ This directory is the navigation hub for the challenge documentation. The busine
 | [Inventory and Ledger](business-rules/inventory-and-ledger.md) | Stock buckets, canonical movements, projections, adjustments, and transfers |
 | [Orders and Reservations](business-rules/orders-and-reservations.md) | Partial allocation, backorders, edits, releases, and expiration |
 | [Fulfillment and Shipping](business-rules/fulfillment-and-shipping.md) | Picking, packing, partial shipments, provider outcomes, and delivery |
+| [Mock Shipping Provider](business-rules/mock-shipping-provider.md) | Persistent fake-provider state, outcome controls, HTTP callbacks, replay, and reconciliation |
 | [Reliability and Security](business-rules/reliability-and-security.md) | Locking, idempotency, jobs, webhooks, recovery, and HMAC verification |
 | [Interfaces and Scope](business-rules/interfaces-and-scope.md) | Blade UI, commands, jobs, webhook, boundaries, and optional API |
 | [Acceptance Scenarios](business-rules/acceptance-scenarios.md) | Observable examples used to validate the implementation |

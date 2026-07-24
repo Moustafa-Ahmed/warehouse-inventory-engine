@@ -55,7 +55,7 @@ Planned screens:
 11. Backorder work queue with allocate-now action.
 12. Shipment list and detail with items, attempts, events, and submission controls.
 13. Provider-event inbox.
-14. Local demonstration controls for deterministic provider outcomes.
+14. Local mock-provider controls for per-shipment outcome selection, shipment confirmation, delivery confirmation, exact webhook replay, and out-of-order delivery.
 
 The submission-critical UI is the minimum inventory, order/reservation, fulfillment/shipment, provider-event, reporting, and demonstration flow. Catalog create/edit convenience and the consolidated dashboard are supporting work: they remain planned, but may be simplified after the explicit post-Phase-5 time review because reference data and direct operational pages already support the core demonstration.
 
@@ -96,6 +96,15 @@ Demonstration commands:
 ```text
 demo:concurrent-reservation
 demo:inventory-scenarios
+mock-provider:send-event
+mock-provider:replay-event
+```
+
+Provider recovery commands:
+
+```text
+shipments:reconcile-uncertain
+mock-provider:dispatch-pending
 ```
 
 Optional:
@@ -112,8 +121,9 @@ Planned jobs:
 
 - Allocate an outstanding order item after stock receipt.
 - Submit a shipment through the provider.
+- Reconcile an uncertain shipment by stable provider request key.
 - Process a persisted provider event.
-- Generate delayed or duplicate callbacks in the mock provider.
+- Deliver a persisted mock-provider callback over signed HTTP.
 
 Every job is idempotent and may execute more than once.
 
@@ -122,6 +132,8 @@ Every job is idempotent and may execute more than once.
 Core schedules:
 
 - Process pending shipments.
+- Reconcile uncertain shipment submissions.
+- Deliver due and retryable mock-provider outbound events.
 - Expire temporary reservations.
 - Process pending provider events.
 - Allocate outstanding order items.
@@ -140,7 +152,8 @@ Scheduled commands prevent overlap. Production multi-server deployment would als
 - Temporary reservation expiration.
 - Pick, return, pack, and unpack.
 - Partial and multiple shipments.
-- Mock provider success, failure, timeout, delay, and duplicate callbacks.
+- Persistent mock-provider shipments and outbound-event delivery history.
+- Mock provider success, failure, timeout-after-acceptance, delay, duplicate, replay, reconciliation, and out-of-order callbacks.
 - Provider-event inbox and HMAC validation.
 - Central idempotency records.
 - Artisan commands, queued jobs, scheduler, signed provider webhook, and minimal operational Blade UI.

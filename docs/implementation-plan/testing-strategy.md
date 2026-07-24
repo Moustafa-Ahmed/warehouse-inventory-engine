@@ -36,7 +36,8 @@ Important methods and boundaries:
 - Order-item quantity conservation/progress calculator.
 - Shipment-confirmation inventory deduction.
 - Pending-shipment command and submission job.
-- Mock-provider outcome mapping.
+- Mock-provider outcome mapping, stable-key identity, and status lookup.
+- Mock-provider outbound-event delivery and retry state.
 - Provider-event persistence and processing.
 
 Required risks to prove:
@@ -53,6 +54,9 @@ Required risks to prove:
 10. A duplicate or retried job cannot create another shipment effect.
 11. A valid signed callback is processed once; an invalid signature is rejected.
 12. Duplicate and out-of-order provider events cannot deduct inventory twice or skip prerequisites.
+13. Provider acceptance alone cannot mark a shipment shipped.
+14. Status reconciliation cannot bypass the callback or create a second external shipment.
+15. Retried outbound HTTP delivery reuses the same event identity and produces at most one business effect.
 
 Use a dataset when several provider outcomes or state transitions share the same setup. Do not create separate repetitive test classes merely to increase test count.
 
@@ -95,6 +99,7 @@ The exact filenames may follow the implemented class names, but the distinction 
 - Database-backed smoke and critical tests run against MySQL so checks, locking, and transaction behavior match production assumptions.
 - Concurrency tests use separate connections or processes.
 - Queue fakes may verify dispatch wiring, but repeat execution and retry safety are proven by directly executing the important jobs against persisted state.
+- Outbound mock-provider HTTP is faked in automated tests; the receiving webhook route is tested directly as an HTTP boundary.
 - Random provider behavior is made deterministic through an injected outcome selector in tests; the suite must never be flaky.
 
 ## Working Commands

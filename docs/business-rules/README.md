@@ -8,9 +8,10 @@ This handbook records the agreed behavior of the Warehouse Inventory Reservation
 2. [Inventory and Ledger](inventory-and-ledger.md)
 3. [Orders and Reservations](orders-and-reservations.md)
 4. [Fulfillment and Shipping](fulfillment-and-shipping.md)
-5. [Reliability and Security](reliability-and-security.md)
-6. [Interfaces and Scope](interfaces-and-scope.md)
-7. [Acceptance Scenarios](acceptance-scenarios.md)
+5. [Mock Shipping Provider](mock-shipping-provider.md)
+6. [Reliability and Security](reliability-and-security.md)
+7. [Interfaces and Scope](interfaces-and-scope.md)
+8. [Acceptance Scenarios](acceptance-scenarios.md)
 
 ## Design Objective
 
@@ -44,10 +45,12 @@ flowchart TD
     L --> M["Pack"]
     M --> N["Create one or more partial shipments"]
     N --> O["Submit through queued provider job"]
-    O --> P{"Provider outcome"}
-    P -->|"Timeout"| Q["Keep state uncertain and retry with the same provider key"]
+    O --> P{"Provider response"}
+    P -->|"Timeout"| Q["Keep state uncertain and reconcile with the same provider key"]
     P -->|"Permanent failure"| R["Keep stock packed for a new attempt or explicit reversal"]
-    P -->|"Confirmed handoff"| S["Move packed stock to shipped"]
+    P -->|"Accepted"| U["Wait for signed shipment-confirmed webhook"]
+    Q --> U
+    U --> S["Move packed stock to shipped"]
     S --> T["Delivery updates fulfillment status only"]
 ```
 

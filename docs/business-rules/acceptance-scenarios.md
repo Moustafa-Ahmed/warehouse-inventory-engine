@@ -88,11 +88,13 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 
 ## 12. Provider Timeout
 
-**Given** a packed shipment  
-**When** submission times out  
-**Then** the shipment becomes uncertain  
-**And** packed and on-hand balances remain unchanged  
-**And** retry uses the same provider request key.
+**Given** a packed shipment<br>
+**When** the mock provider accepts it but the submission response times out<br>
+**Then** the shipment becomes uncertain<br>
+**And** the mock provider retains one external shipment under the stable request key<br>
+**And** packed and on-hand balances remain unchanged<br>
+**And** retry and status lookup use the same provider request key<br>
+**And** only the later signed confirmation callback marks the shipment shipped.
 
 ## 13. Permanent Provider Failure
 
@@ -173,3 +175,32 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 **When** the administrator opens the operational reports  
 **Then** the open-reservation report includes only reservations with active stage quantity  
 **And** the consumed-inventory report includes only orders with quantity moved from packed to external/shipped after confirmed carrier handoff.
+
+## 24. Accepted Submission Is Not Yet Shipped
+
+**Given** the provider accepts a packed shipment<br>
+**When** no shipment-confirmed callback has been processed<br>
+**Then** the local shipment is not marked shipped<br>
+**And** inventory remains packed.
+
+## 25. Manual Mock Confirmation
+
+**Given** an accepted mock-provider shipment in the local environment<br>
+**When** the administrator requests “Send shipment confirmation now”<br>
+**Then** the mock provider persists an outbound event and sends a signed HTTP callback<br>
+**And** the control does not call the local shipment-confirmation action directly<br>
+**And** inventory moves to shipped only after webhook processing.
+
+## 26. Outbound Transport Retry
+
+**Given** a persisted mock-provider outbound event<br>
+**When** its HTTP delivery times out or receives a retryable response<br>
+**Then** it remains retryable with the same external event ID and raw body<br>
+**And** a later successful delivery creates at most one received event and one business effect.
+
+## 27. Reconciliation Does Not Bypass the Webhook
+
+**Given** an uncertain local submission whose provider status is handoff confirmed<br>
+**When** reconciliation queries the stable provider request key<br>
+**Then** the existing provider confirmation event becomes deliverable again<br>
+**And** reconciliation itself does not deduct inventory.

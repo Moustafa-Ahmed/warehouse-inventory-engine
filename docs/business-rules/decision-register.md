@@ -46,6 +46,14 @@ This register records the decisions made during the design workshop. “Accepted
 | D23 | Provisional | Demonstrate six focused live failure scenarios and use the small smoke/critical test suite plus explanation or manual evidence for other relevant behavior. Final video contents may change after the demo is complete. |
 | D24 | Provisional | Accept the documented core, stretch, and out-of-scope boundaries for now. Implement submission-critical work first. Supporting work remains planned but may be simplified only after an explicit time review, with the change recorded as a limitation. |
 | D25 | Accepted | Use a small risk-based Pest suite. Smoke tests cover application wiring, required pages, commands, and representative happy paths. Focused MySQL integration and concurrency tests cover inventory correctness, idempotency, rollback, reservations, shipment deduction, retries, and duplicate callbacks. Unit tests are limited to important pure calculations or state/outcome mapping; exhaustive per-class or per-branch coverage is not required. |
+| D26 | Accepted | Only a valid persisted `shipment.confirmed` webhook may mark a local shipment shipped and deduct packed inventory. Provider submission responses and administrator controls cannot do so directly. |
+| D27 | Accepted | Persist the mock provider's external shipments and outbound events separately from local provider attempts and the received-event inbox. |
+| D28 | Accepted | Mock-provider outcomes use configurable weighted random selection by default, with a per-shipment forced override for deterministic tests and demonstrations. |
+| D29 | Accepted | In local demonstration, the mock provider sends callbacks as actual signed HTTP requests to the configured webhook URL. Automated tests fake outbound HTTP while testing the real receiving route independently. |
+| D30 | Accepted | Local/testing controls can send shipment confirmation, send delivery confirmation, replay the last webhook, and deliberately send an out-of-order delivery event. These controls operate only through mock-provider outbound events. |
+| D31 | Accepted | The timeout demonstration represents provider acceptance followed by a lost response. The external identity and future callback already exist while the local submission remains uncertain and inventory remains packed. |
+| D32 | Accepted | Uncertain submissions support provider status lookup by the stable request key as well as idempotent resubmission. Reconciliation never bypasses the confirmation webhook. |
+| D33 | Accepted | An exact duplicate callback reuses the same external event ID and raw body. Repeated HTTP attempts and application processing must remain harmless. |
 
 ## Deferred Review Points
 

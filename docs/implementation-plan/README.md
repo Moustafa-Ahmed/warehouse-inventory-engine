@@ -11,7 +11,7 @@ Correctness is built from the database outward while external boundaries and req
 ```text
 Project/test foundation + living submission documents
     -> domain vocabulary + provider contract/deterministic fake
-    -> schema and reference data
+    -> schema, persistent mock-provider state, and reference data
     -> canonical movements and balance projections
     -> orders, progress, reservations, release, and backorders
     -> physical fulfillment and shipment preparation
@@ -38,11 +38,11 @@ Supporting tasks encountered before Phase 5 may be parked while the submission-c
 
 | Phase | Outcome | Priority |
 | --- | --- | --- |
-| [1. Foundation and Schema](phase-01-foundation-and-schema.md) | Living submission docs, MySQL test harness, early provider boundary, schema, factories, and reference seed data | Submission-critical |
+| [1. Foundation and Schema](phase-01-foundation-and-schema.md) | Living submission docs, MySQL test harness, early provider boundary, warehouse/mock-provider schema, factories, and reference seed data | Submission-critical |
 | [2. Inventory Ledger](phase-02-inventory-ledger.md) | Idempotent receipts, adjustments, transfers, movements, projections, and concurrency proof | Submission-critical |
 | [3. Orders and Reservations](phase-03-orders-and-reservations.md) | Shared progress calculation, partial allocation, release, edits, expiration, and backorder recovery | Submission-critical |
 | [4. Fulfillment](phase-04-fulfillment.md) | Pick, return, pack, unpack, shipment preparation, and conservation | Submission-critical |
-| [5. Shipping Reliability](phase-05-shipping-reliability.md) | Thin jobs/commands over provider actions, timeouts, signed callbacks, and duplicate safety | Submission-critical |
+| [5. Shipping Reliability](phase-05-shipping-reliability.md) | Persistent mock-provider behavior, actual HTTP callbacks, thin jobs/commands, reconciliation, and duplicate safety | Submission-critical |
 | [6. Interfaces and Demo](phase-06-interfaces-and-demo.md) | Minimal authenticated Blade workflows, operational reports, scenario data, and demo controls | Mixed |
 | [7. Hardening and Submission](phase-07-hardening-and-submission.md) | Risk-based proof, finalized docs, evidence, video, and repository handoff | Submission-critical |
 
@@ -89,6 +89,8 @@ The first safe time review happens after Phase 5. At that point the backend must
 - Pick/pack quantity conservation.
 - Shipment command and queued-job processing.
 - Provider success, permanent failure, timeout, delayed confirmation, and duplicate callback behavior.
+- Actual signed HTTP callback delivery from the mock provider, including transport retry.
+- Stable-key status lookup and reconciliation of uncertain submissions without bypassing the webhook.
 - Duplicate and out-of-order callback safety.
 
 Phase 6 then builds the minimum UI and reports needed to operate and explain those capabilities. Presentation-only dashboard polish and broad catalog convenience are supporting work.

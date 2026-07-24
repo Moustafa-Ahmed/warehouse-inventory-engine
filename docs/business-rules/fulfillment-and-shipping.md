@@ -81,12 +81,14 @@ Rules:
 - Every provider request uses a stable request key.
 - Provider attempts are recorded independently from the shipment’s business state.
 - A duplicate job must not create another external shipment.
+- An accepted provider response records acceptance only; it does not mark the shipment shipped.
+- The local shipment is marked shipped only after a valid `shipment.confirmed` callback is persisted and processed.
 
 ## 7. Provider Outcomes
 
-### Immediate or Delayed Success
+### Immediate or Delayed Acceptance
 
-The provider may accept immediately or confirm later. Inventory is deducted only when carrier handoff/shipment is confirmed.
+The provider may accept immediately and make its confirmation callback due immediately, or schedule it for later. In both cases, inventory remains packed until the signed callback is received and processed.
 
 ### Timeout
 
@@ -94,8 +96,9 @@ A timeout means the external outcome is unknown:
 
 - Shipment becomes submission-uncertain.
 - Packed and on-hand balances do not change.
-- Retry or reconciliation reuses the same provider request key.
+- Retry, provider status lookup, or reconciliation reuses the same provider request key.
 - A later callback may resolve the state.
+- The required demonstration scenario allows the provider to have accepted and scheduled the callback before the caller experiences the timeout.
 
 ### Permanent Failure
 
@@ -126,6 +129,8 @@ The confirmation transaction:
 9. Commits atomically.
 
 Repeating confirmation cannot deduct stock twice.
+
+Provider status lookup cannot run this transaction directly. If reconciliation discovers confirmed handoff but the callback was lost, the provider must redeliver its existing signed confirmation event.
 
 ## 9. Delivery
 

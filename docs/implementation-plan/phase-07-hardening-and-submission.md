@@ -49,7 +49,7 @@ Scope:
 
 - Finalize the living root `README.md`.
 - Verify prerequisites, MySQL setup, environment variables, installation, migration, seeding, workers, scheduler, frontend build, commands, and test instructions.
-- Document demo administrator setup and provider configuration.
+- Document demo administrator setup, callback URL, HMAC secret, random outcome weights, non-synchronous queue connection, queue worker, and mock-provider controls.
 - Document assumptions, priority decisions, deferred supporting work, and known limitations.
 - Remove every placeholder and stale command.
 
@@ -65,7 +65,7 @@ Done when:
 Scope:
 
 - Finalize `docs/ARCHITECTURE.md` against the implemented code.
-- Describe domain model, schema, lifecycle, movements, projections, locking, idempotency, progress calculation, actions, jobs, provider boundary, security, scaling, and trade-offs.
+- Describe domain model, schema, lifecycle, movements, projections, locking, idempotency, progress calculation, actions, jobs, persistent mock-provider boundary, outbound HTTP delivery, inbound event processing, reconciliation, security, scaling, and trade-offs.
 - Explain the design patterns and SOLID principles actually used.
 - Link the business rules, ERD, and implementation evidence.
 - Update diagrams to match implemented behavior.
@@ -125,7 +125,7 @@ Scope:
 - Record a target 18–19 minute walkthrough using this timed outline:
   - **0:00–2:00 — Introduction:** identity, relevant ERP/inventory/warehouse/logistics/POS/CRUD experience, and why this architecture was chosen.
   - **2:00–7:00 — Architecture:** domain model, schema, reservation lifecycle, ledger/projections, concurrency, security, decisions, patterns, and SOLID.
-  - **7:00–13:00 — Failure scenarios:** demonstrate at least five; provisionally show final-unit concurrency, repeated reservation, partial recovery, timeout then confirmation, duplicate callback, and rollback.
+  - **7:00–13:00 — Failure scenarios:** demonstrate at least five; provisionally show final-unit concurrency, repeated reservation, partial recovery, timeout-after-provider-acceptance followed by an actual HTTP confirmation, duplicate callback, and rollback.
   - **13:00–15:00 — Testing:** what was tested, why the focused tests matter, risks protected, and how the few unit tests validate pure business rules.
   - **15:00–17:00 — AI and ownership:** where AI helped, rejected suggestions, independently selected decisions, and differences from a typical generated solution.
   - **17:00–18:30 — Production future:** improvements, scaling, remaining risks, and support for millions of inventory transactions.
@@ -165,8 +165,8 @@ Provisionally demonstrate:
 1. Concurrent reservation of the final unit.
 2. Repeating the same reservation operation.
 3. Partial reservation completed after stock receipt.
-4. Provider timeout followed by late confirmation.
-5. Duplicate provider callback.
+4. Provider timeout after acceptance, stable-key reconciliation, and late signed HTTP confirmation.
+5. Exact duplicate provider callback using the same external event ID and body.
 6. Injected transaction failure and rollback.
 
 Briefly show or explain smoke/focused evidence for worker retry, cancellation, partial shipment, transfer, out-of-order events, and permanent provider failure.
@@ -198,6 +198,7 @@ Done when:
 - [ ] Small risk-based suite passes on MySQL
 - [ ] Required Artisan command and queued jobs work
 - [ ] Mock provider covers every required outcome
+- [ ] Mock-provider callback URL, worker, scheduler, and deterministic controls work from documented setup
 - [ ] Root README finalized
 - [ ] `docs/ARCHITECTURE.md` finalized
 - [ ] `docs/AI_USAGE.md` finalized

@@ -108,8 +108,12 @@ Scope:
 - Add valid pick, return, pack, and unpack controls.
 - Add shipment list/create/detail/submission screens.
 - Show provider attempts, uncertainty, permanent failure, and callback processing.
+- Show the related mock external shipment and outbound callback delivery history.
 - Add a provider-event inbox with safe status/error context.
 - Add retry controls that reuse the established provider request identity.
+- Add a local-only per-shipment provider-outcome selector.
+- Add local-only forms to send shipment confirmation, send delivery confirmation, replay the last webhook, and send an out-of-order delivery event.
+- Ensure every mock-provider form changes provider state or queues an HTTP callback; none may call shipment or inventory transition actions directly.
 - Add these pages to the smoke suite.
 - Add one focused assertion that sensitive provider data is not rendered.
 
@@ -117,6 +121,7 @@ Done when:
 
 - The complete shipment lifecycle can be explained from the UI.
 - Administrators can inspect uncertain and permanently failed outcomes without exposing secrets.
+- A reviewer can trigger and trace an actual signed HTTP callback from the mock-provider outbound record to the received-event inbox and resulting inventory movement.
 
 ## Commit P6.7 — `feat: add operational query services and reports`
 
@@ -146,10 +151,11 @@ Done when:
 Scope:
 
 - Build demo scenario data through the implemented application actions, never direct non-zero balance or history inserts.
-- Add deterministic local controls for every fake-provider outcome.
+- Seed deterministic provider scenarios that use the controls already exposed on the shipment screen.
 - Add `demo:concurrent-reservation`.
 - Add a local-only `demo:inventory-scenarios` setup/reset command with explicit environment protection.
 - Include scenarios for partial allocation, timeout, permanent failure, duplicate callback, pending event, and shipment confirmation.
+- Include the timeout-after-acceptance flow so reconciliation and late HTTP confirmation can be demonstrated.
 - Add one focused test proving demo controls are disabled outside local/testing environments.
 
 Done when:
@@ -229,6 +235,7 @@ Do not begin these commits until all submission-critical implementation, tests, 
 - [ ] Partial results visibly distinguish requested, allocated, and outstanding quantities
 - [ ] Required operations work without JavaScript
 - [ ] Demo data is produced through application actions and every provider outcome is deterministic
+- [ ] Mock-provider controls are local-only and drive the real outbound HTTP callback path
 - [ ] Supporting catalog/dashboard work is complete, simplified, or documented as a limitation
 - [ ] No general JSON API is required for this gate
 - [ ] README, architecture, AI-usage, and video-outline documents are current

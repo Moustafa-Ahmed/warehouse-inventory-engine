@@ -71,6 +71,8 @@ Core recovery paths:
 
 - Outstanding order items are discoverable by the backorder allocator.
 - Pending shipments are discoverable by the shipment command.
+- Uncertain shipment submissions are discoverable by the provider reconciliation command.
+- Due and retryable mock-provider outbound events are discoverable by the mock-provider dispatcher.
 - Pending provider events are discoverable by the provider-event command.
 - Temporary reservations are discoverable by the expiration command.
 
@@ -119,6 +121,10 @@ The webhook endpoint verifies:
 6. Event uniqueness before processing.
 
 Secrets are read through configuration and are never committed.
+
+The local mock provider sends callbacks to the configured webhook URL over actual HTTP. It persists the event before sending, retries transient transport failures with the same external event ID and raw body, and records delivery attempts. Tests fake outbound HTTP so the suite does not depend on a running server.
+
+A provider status response can reconcile submission state but cannot mark inventory shipped. Shipment deduction remains exclusively webhook-driven.
 
 ## 7. Application Security
 

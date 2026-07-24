@@ -83,17 +83,18 @@ Scope:
 
 - Add the `ShippingProvider` contract.
 - Add provider request/result objects and explicit success, permanent-failure, timeout/uncertain, and delayed-confirmation outcomes.
+- Include provider status lookup by stable request key in the boundary so uncertain submissions can be reconciled without creating a new identity.
 - Add an injectable outcome selector.
 - Implement an in-memory deterministic fake that can return each outcome without database, queue, or HTTP dependencies.
 - Allow a deterministic scenario description to request later or duplicate callback behavior without delivering callbacks yet.
-- Bind the contract to the fake for local/testing environments.
+- Bind the contract to the early in-memory fake for local/testing environments until Phase 5 replaces the local runtime binding with the persistent mock-provider adapter.
 - Add one focused outcome-mapping dataset.
 
 Done when:
 
 - Provider-facing code can depend on a stable interface from the start.
 - Every required outcome can be selected deterministically.
-- Random selection, callback delivery, HMAC, and persistence remain intentionally deferred until the shipment/event infrastructure exists.
+- The small in-memory fake remains useful for isolated contract tests, while random selection, callback delivery, HMAC, and persistence remain intentionally deferred until the shipment/event infrastructure exists.
 
 ## Commit P1.6 — `feat: add product and warehouse catalogs`
 
@@ -181,7 +182,7 @@ Done when:
 - The schema supports future multi-warehouse allocation.
 - Expiring reservations are efficiently queryable.
 
-## Commit P1.11 — `feat: add shipment attempt and provider event schema`
+## Commit P1.11 — `feat: add shipment and provider reliability schema`
 
 **Priority:** Submission-critical
 
@@ -189,6 +190,8 @@ Scope:
 
 - Add shipments and shipment items.
 - Add provider submission attempts with stable provider request keys and outcomes.
+- Add mock-provider shipments with unique request keys, external identities, forced/random scenario metadata, provider status, and lifecycle timestamps.
+- Add mock-provider outbound events with immutable event identity/body, delivery schedule, status, attempts, and safe response/error context.
 - Add provider-event inbox with unique provider/external-event identity, raw payload, occurrence time, processing status, and safe error context.
 - Add models, relationships, casts, indexes, and factory states.
 
@@ -196,6 +199,8 @@ Done when:
 
 - One order supports multiple warehouse-specific shipments.
 - Provider attempts are distinct from shipment business state.
+- Mock-provider external state is distinct from local attempts and the received-event inbox.
+- Due callbacks and uncertain provider shipments are efficiently discoverable.
 - Duplicate external event IDs are rejected by the database.
 
 ## Commit P1.12 — `feat: seed reference warehouse data`
