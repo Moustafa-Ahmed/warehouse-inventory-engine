@@ -102,7 +102,7 @@ The exact filenames may follow the implemented class names, but the distinction 
 - Concurrency tests use separate connections or processes.
 - Queue fakes may verify dispatch wiring, but repeat execution and retry safety are proven by directly executing the important jobs against persisted state.
 - Outbound mock-provider HTTP is faked in automated tests; the receiving webhook route is tested directly as an HTTP boundary.
-- Random provider behavior is made deterministic through an injected outcome selector in tests; the suite must never be flaky.
+- Provider scenarios are selected directly and deterministically in tests; the suite must never be flaky.
 
 ## Working Commands
 

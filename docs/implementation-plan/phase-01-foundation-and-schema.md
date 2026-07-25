@@ -51,7 +51,7 @@ Scope:
 - Define only the submission outcomes consumed by this boundary: accepted, permanently failed, and timeout/uncertain.
 - Keep callback intent separate from submission outcome. A deterministic scenario description may request immediate, delayed, duplicate, or out-of-order callback behavior without delivering callbacks yet.
 - Include provider status lookup by stable request key in the boundary so uncertain submissions can be reconciled without creating a new identity.
-- Add an injectable outcome selector.
+- Select the fake's deterministic scenario directly at construction; do not add a selector abstraction.
 - Implement an in-memory deterministic fake that can return each outcome without database, queue, or HTTP dependencies.
 - Bind the contract to the early in-memory fake for local/testing environments until Phase 5 replaces the local runtime binding with the persistent mock-provider adapter.
 - Add one focused outcome-mapping dataset.

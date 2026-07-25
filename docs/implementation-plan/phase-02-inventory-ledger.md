@@ -37,6 +37,7 @@ Scope:
 - Validate source quantity after locking.
 - Append movement and update projections in one transaction.
 - Support external source/destination boundaries.
+- Keep factory defaults neutral and valid: inventory balances begin at zero and movement rows default to an external receipt. For test setup needing stock, create a zero balance and apply a receipt through this service so the ledger and projection remain coherent. Add narrowly named factory helpers only when an implemented test has a repeated, valid setup that they remove.
 - Add focused MySQL critical tests for conservation, non-negative source protection, rollback, and deterministic multi-row locking.
 
 Done when:
