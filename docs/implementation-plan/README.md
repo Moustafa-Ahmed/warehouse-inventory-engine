@@ -92,7 +92,7 @@ The first safe time review happens after Phase 5. At that point the backend must
 - Shipment command and queued-job processing.
 - Provider success, permanent failure, timeout, delayed confirmation, and duplicate callback behavior.
 - Actual signed HTTP callback delivery from the mock provider, including transport retry.
-- Stable-key status lookup and reconciliation of uncertain submissions without bypassing the webhook.
+- Stable-key status lookup and reconciliation of provider submissions with unknown outcomes without bypassing the webhook.
 - Duplicate and out-of-order callback safety.
 
 Phase 6 then builds the minimum UI and reports needed to operate and explain those capabilities. Presentation-only dashboard polish and broad catalog convenience are supporting work.

@@ -82,7 +82,7 @@ Rules:
 Planned screens:
 
 1. Administrator login.
-2. Dashboard for partial allocations, expiring reservations, shipments pending handoff, uncertain or failed provider submissions, pending provider webhook receipts, and recent movements.
+2. Dashboard for partial allocations, expiring reservations, shipments pending handoff, provider submissions with unknown outcomes or permanent failures, pending provider webhook receipts, and recent movements.
 3. Product catalog with per-warehouse stock and outstanding demand.
 4. Warehouse catalog with current stock.
 5. Inventory balance details with receipt, adjustment, transfer, reservation, and movement forms or links.
@@ -142,7 +142,7 @@ mock-provider:replay-webhook
 Provider recovery commands:
 
 ```text
-provider-submissions:reconcile-uncertain
+provider-submissions:reconcile-unknown
 mock-provider:dispatch-pending
 ```
 
@@ -160,7 +160,7 @@ Planned jobs:
 
 - Allocate an outstanding order item after stock receipt.
 - Submit a shipment through the provider.
-- Reconcile an uncertain provider submission by stable provider request key.
+- Reconcile a provider submission with an unknown outcome by stable provider request key.
 - Process a persisted provider webhook receipt.
 - Deliver a persisted mock-provider callback over signed HTTP.
 
@@ -171,7 +171,7 @@ Every job is idempotent and may execute more than once.
 Core schedules:
 
 - Process pending shipments.
-- Reconcile uncertain provider submissions.
+- Reconcile provider submissions with unknown outcomes.
 - Deliver due and retryable mock-provider webhooks.
 - Expire temporary reservations.
 - Process pending provider webhook receipts.

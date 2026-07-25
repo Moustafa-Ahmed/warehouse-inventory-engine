@@ -20,7 +20,7 @@ This separation makes the demonstration representative of a real carrier integra
 Submitting a shipment and shipping a shipment are different events.
 
 - The administrator submits a packed shipment to the provider.
-- The provider may accept, reject, or leave the submission outcome uncertain.
+- The provider may accept, reject, or time out and leave the submission outcome unknown.
 - An accepted response records external acceptance only.
 - Only processing a valid persisted `ProviderWebhookReceipt` with type `shipment.confirmed` may mark the shipment shipped and move inventory from packed to external/shipped.
 - Only a valid persisted `delivery.confirmed` webhook may advance delivery progress.
@@ -67,7 +67,7 @@ The normal flow is:
 3. The mock provider creates or finds its external shipment using that key.
 4. The mock provider selects the forced per-shipment scenario, or uses weighted random selection when no override exists.
 5. It records the provider result and any future mock-provider webhook before responding.
-6. The warehouse application records accepted, permanently failed, or uncertain state.
+6. The warehouse application records an accepted, permanently failed, or unknown outcome.
 7. A mock-provider delivery job sends due callbacks to the configured application webhook URL over HTTP.
 8. The webhook verifies HMAC and persists a provider webhook receipt before queuing business processing.
 9. Provider webhook processing performs the eligible shipment or delivery transition atomically.
@@ -82,7 +82,7 @@ No provider HTTP call runs while warehouse inventory rows are locked.
 | Immediate success | Accept and make `shipment.confirmed` immediately due for HTTP delivery | Packed |
 | Delayed success | Accept and schedule `shipment.confirmed` for later | Packed |
 | Permanent failure | Reject and generate no confirmation | Packed |
-| Timeout then success | Persist acceptance and a future confirmation, then simulate a lost/timed-out response | Packed and submission uncertain |
+| Timeout then success | Persist acceptance and a future confirmation, then simulate a lost/timed-out response | Packed and submission outcome unknown |
 | Success with duplicate delivery | Confirm handoff, then send the same delivery webhook more than once | Deducted once at shipment confirmation |
 | Out-of-order delivery | Send delivery before shipment confirmation | Packed; its provider webhook receipt remains pending |
 
@@ -142,7 +142,7 @@ The required timeout scenario represents acceptance by the provider followed by 
 
 1. The mock provider creates the external shipment.
 2. It schedules the future `shipment.confirmed` webhook.
-3. The warehouse call times out and records an uncertain submission.
+3. The warehouse call times out and records the submission outcome as unknown.
 4. Packed and on-hand quantities remain unchanged.
 5. Reconciliation queries the provider with the same stable request key.
 6. Resubmission with that key also returns the same external shipment.
@@ -188,7 +188,7 @@ Transport retry and deliberate replay both use the same identity. The `MockProvi
 Scheduled recovery discovers:
 
 - Due or retryable mock-provider webhooks.
-- Uncertain provider submissions needing provider status lookup.
+- Provider submissions with unknown outcomes needing provider status lookup.
 - Pending provider webhook receipts whose prerequisites may now exist.
 
 The shipment detail and provider webhook receipt screens show:

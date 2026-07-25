@@ -24,7 +24,7 @@ final class InMemoryProvider implements ShippingProvider
 
         $submissionResult = new Result(
             providerRequestKey: $request->providerRequestKey,
-            externalShipmentId: $externalShipmentId,
+            externalShipmentId: $this->scenario === Scenario::TimeoutThenSuccess ? null : $externalShipmentId,
             outcome: $this->scenario->responseOutcome(),
             callbackIntent: $this->scenario->callbackIntent(),
         );

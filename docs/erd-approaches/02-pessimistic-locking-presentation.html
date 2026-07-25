@@ -1681,7 +1681,7 @@ CHECK (
                 <div class="flow-row">
                     <article class="flow-card"><span class="tag">01 · DB</span><h3>Claim shipment</h3><p>Short transaction changes pending → submitting and commits.</p></article>
                     <article class="flow-card"><span class="tag">02 · HTTP</span><h3>Call provider</h3><p>Outside the transaction, with timeout and stable request key.</p></article>
-                    <article class="flow-card"><span class="tag">03 · DB</span><h3>Record response</h3><p>Lock shipment; store accepted, failed, or uncertain result.</p></article>
+                    <article class="flow-card"><span class="tag">03 · DB</span><h3>Record response</h3><p>Lock shipment; store accepted, permanently failed, or unknown result.</p></article>
                     <article class="flow-card"><span class="tag">04 · WEBHOOK</span><h3>Store webhook event (planned)</h3><p>Pending persistence contract: insert the raw callback into shipment_events under UNIQUE(provider, external_event_id). On conflict, reload or claim the event; retry or enqueue processing when processed_at is null, and treat it as a harmless duplicate only after processing completes.</p></article>
                     <article class="flow-card"><span class="tag">05 · DB</span><h3>Apply once</h3><p>Lock affected rows, ship packed quantity, append movement, commit.</p></article>
                 </div>
@@ -1699,7 +1699,7 @@ CHECK (
                         <tr><td>Two users reserve the last item</td><td>Second request waits, then sees zero available.</td><td>FOR UPDATE serializes the decision.</td></tr>
                         <tr><td>Reservation command runs twice</td><td>Return the first reservation.</td><td>Unique idempotency key prevents a second effect.</td></tr>
                         <tr><td>Worker crashes mid-transaction</td><td>Database rolls back every write and releases locks.</td><td>No partial reservation or movement survives.</td></tr>
-                        <tr><td>Provider times out</td><td>Mark outcome uncertain; retry with the same provider key or reconcile.</td><td>A timeout is not treated as a definite failure.</td></tr>
+                        <tr><td>Provider times out</td><td>Mark the outcome unknown; retry with the same provider key or reconcile.</td><td>A timeout is not treated as a definite failure.</td></tr>
                         <tr><td>Webhook arrives twice</td><td>Second insert conflicts and returns an idempotent success.</td><td>The state transition runs only for the first event.</td></tr>
                         <tr><td>Order partially cancelled</td><td>Release only the unpicked/unpacked remainder.</td><td>Locked quantity buckets prevent releasing shipped stock.</td></tr>
                     </tbody>
@@ -2027,7 +2027,7 @@ CHECK (
                 timeout: {
                     title: 'Timeout means “unknown”',
                     copy: 'The provider may have accepted the shipment even though the response never arrived. Do not create a fresh request identity on retry.',
-                    points: ['Keep status as submitting or uncertain.', 'Retry or query using the same provider request key.', 'Wait for reconciliation or webhook confirmation.']
+                    points: ['Record the provider outcome as unknown.', 'Retry or query using the same provider request key.', 'Wait for reconciliation or webhook confirmation.']
                 },
                 permanent: {
                     title: 'Permanent failure',

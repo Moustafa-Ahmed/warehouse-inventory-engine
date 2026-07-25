@@ -11,7 +11,8 @@ it('maps deterministic scenarios to response and provider outcomes', function (
     Outcome $responseOutcome,
     Outcome $providerOutcome,
     ?CallbackIntent $callbackIntent,
-    bool $createsExternalShipment,
+    bool $responseIncludesExternalShipment,
+    bool $providerCreatedExternalShipment,
 ) {
     $provider = new InMemoryProvider($scenario);
 
@@ -25,17 +26,22 @@ it('maps deterministic scenarios to response and provider outcomes', function (
 
     expect($submission->outcome)->toBe($responseOutcome)
         ->and($submission->callbackIntent)->toBe($callbackIntent)
-        ->and($submission->externalShipmentId !== null)->toBe($createsExternalShipment)
+        ->and($submission->externalShipmentId !== null)->toBe($responseIncludesExternalShipment)
         ->and($status)->not->toBeNull()
         ->and($status->outcome)->toBe($providerOutcome)
         ->and($status->callbackIntent)->toBe($callbackIntent)
-        ->and($status->externalShipmentId)->toBe($submission->externalShipmentId);
+        ->and($status->externalShipmentId !== null)->toBe($providerCreatedExternalShipment);
+
+    if ($responseIncludesExternalShipment) {
+        expect($status->externalShipmentId)->toBe($submission->externalShipmentId);
+    }
 })->with([
     'immediate success' => [
         Scenario::ImmediateSuccess,
         Outcome::Accepted,
         Outcome::Accepted,
         CallbackIntent::Immediate,
+        true,
         true,
     ],
     'delayed success' => [
@@ -44,6 +50,7 @@ it('maps deterministic scenarios to response and provider outcomes', function (
         Outcome::Accepted,
         CallbackIntent::Delayed,
         true,
+        true,
     ],
     'permanent failure' => [
         Scenario::PermanentFailure,
@@ -51,12 +58,14 @@ it('maps deterministic scenarios to response and provider outcomes', function (
         Outcome::PermanentlyFailed,
         null,
         false,
+        false,
     ],
     'timeout after provider acceptance' => [
         Scenario::TimeoutThenSuccess,
-        Outcome::Uncertain,
+        Outcome::Unknown,
         Outcome::Accepted,
         CallbackIntent::Delayed,
+        false,
         true,
     ],
     'duplicate callback intent' => [
@@ -65,12 +74,14 @@ it('maps deterministic scenarios to response and provider outcomes', function (
         Outcome::Accepted,
         CallbackIntent::Duplicate,
         true,
+        true,
     ],
     'out-of-order callback intent' => [
         Scenario::OutOfOrderDelivery,
         Outcome::Accepted,
         Outcome::Accepted,
         CallbackIntent::OutOfOrder,
+        true,
         true,
     ],
 ]);

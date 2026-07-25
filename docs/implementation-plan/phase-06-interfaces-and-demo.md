@@ -108,7 +108,7 @@ Scope:
 
 - Add valid pick, return, pack, and unpack controls.
 - Add shipment list/create/detail/submission screens.
-- Show provider submissions, uncertainty, permanent failure, and webhook processing.
+- Show accepted provider submissions, unknown outcomes, permanent failures, and webhook processing.
 - Show the related mock-provider shipment and mock-provider webhook delivery history.
 - Add provider webhook receipt screens with safe status/error context.
 - Add retry controls that reuse the established provider request identity.
@@ -121,7 +121,7 @@ Scope:
 Done when:
 
 - The complete shipment lifecycle can be explained from the UI.
-- Administrators can inspect uncertain and permanently failed outcomes without exposing secrets.
+- Administrators can inspect unknown and permanently failed outcomes without exposing secrets.
 - A reviewer can trigger and trace an actual signed HTTP callback from a mock-provider webhook to the provider webhook receipt and resulting inventory movement.
 
 ## Commit P6.7 — `feat: add operational query services and reports`
@@ -189,7 +189,7 @@ Done when:
 Scope:
 
 - Build the dashboard only after the query services exist.
-- Show concise counts/lists for partial allocations, expiring reservations, shipments pending handoff, uncertain or failed provider submissions, pending provider webhook receipts, and recent movements.
+- Show concise counts/lists for partial allocations, expiring reservations, shipments pending handoff, provider submissions with unknown outcomes or permanent failures, pending provider webhook receipts, and recent movements.
 - Link dashboard items to the corresponding operational screens.
 - Reuse query services rather than introducing dashboard-specific business queries.
 - Add the dashboard to the smoke suite.

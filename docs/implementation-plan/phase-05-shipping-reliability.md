@@ -106,7 +106,7 @@ Scope:
 - Depend on `ShippingProvider`, not the persistent mock implementation.
 - Consume the existing provider request/result DTOs and keep submission outcome separate from callback-delivery intent.
 - Make the provider call outside database transactions.
-- Record accepted, permanent failure, and timeout/uncertain results on the `ProviderSubmission` through short follow-up transactions owned by the service.
+- Record accepted, permanently failed, and unknown-after-timeout results on the `ProviderSubmission` through short follow-up transactions owned by the service.
 - Never interpret provider acceptance as shipment confirmation.
 - Ensure immediate success means an immediately due mock-provider webhook, not direct inventory deduction.
 - Use explicit connection and request timeouts at provider adapter boundaries.
@@ -139,15 +139,15 @@ Done when:
 - A permanent rejection is not retried forever.
 - The job and command contain no inventory mutation logic.
 
-## Commit P5.7 — `feat: reconcile uncertain provider submissions`
+## Commit P5.7 — `feat: reconcile provider submissions with unknown outcomes`
 
 **Priority:** Submission-critical
 
 Scope:
 
 - Implement `ShipmentSubmissionService::reconcile()` using provider status lookup and the stable request key.
-- Implement bounded `provider-submissions:reconcile-uncertain` discovery and thin reconciliation jobs.
-- Keep packed and on-hand quantities unchanged while the local outcome is uncertain.
+- Implement bounded `provider-submissions:reconcile-unknown` discovery and thin reconciliation jobs.
+- Keep packed and on-hand quantities unchanged while the local outcome is unknown.
 - Record provider acceptance or rejection without treating status lookup as shipment confirmation.
 - If provider handoff is confirmed but its callback is unacknowledged, make the existing mock-provider confirmation webhook due for redelivery.
 - Allow idempotent resubmission with the same key as a fallback without creating another external shipment.
@@ -249,7 +249,7 @@ Done when:
 Scope:
 
 - Schedule pending-shipment discovery.
-- Schedule uncertain-submission reconciliation.
+- Schedule reconciliation for provider submissions with unknown outcomes.
 - Schedule due/retryable mock-provider webhook delivery.
 - Schedule pending provider webhook receipt processing.
 - Schedule backorder allocation.

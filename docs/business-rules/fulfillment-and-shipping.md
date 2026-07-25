@@ -85,7 +85,7 @@ Rules:
 - Provider submissions are recorded independently from the shipment’s business state.
 - A duplicate job must not create another external shipment.
 - An accepted provider response records acceptance only; it does not mark the shipment shipped.
-- Provider submission success, failure, and uncertainty do not replace the shipment's `pending_handoff` state.
+- Provider submission acceptance, failure, and unknown outcomes do not replace the shipment's `pending_handoff` state.
 - The shipment is marked shipped only after a valid `shipment.confirmed` webhook is persisted as a `ProviderWebhookReceipt` and processed.
 
 ## 7. Provider Outcomes
@@ -98,7 +98,7 @@ The provider may accept immediately and make its confirmation callback due immed
 
 A timeout means the external outcome is unknown:
 
-- The provider submission becomes uncertain.
+- The provider submission outcome becomes unknown.
 - Packed and on-hand balances do not change.
 - Retry, provider status lookup, or reconciliation reuses the same provider request key.
 - A later callback may resolve the state.

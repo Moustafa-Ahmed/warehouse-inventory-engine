@@ -91,7 +91,7 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 
 **Given** a packed shipment<br>
 **When** the mock provider accepts it but the submission response times out<br>
-**Then** the provider submission becomes uncertain<br>
+**Then** the provider submission outcome becomes unknown<br>
 **And** the shipment remains pending handoff<br>
 **And** the mock provider retains one external shipment under the stable request key<br>
 **And** packed and on-hand balances remain unchanged<br>
@@ -202,7 +202,7 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 
 ## 27. Reconciliation Does Not Bypass the Webhook
 
-**Given** an uncertain local submission whose provider status is handoff confirmed<br>
+**Given** a local submission with an unknown outcome whose provider status is handoff confirmed<br>
 **When** reconciliation queries the stable provider request key<br>
 **Then** the existing mock-provider confirmation webhook becomes deliverable again<br>
 **And** reconciliation itself does not deduct inventory.

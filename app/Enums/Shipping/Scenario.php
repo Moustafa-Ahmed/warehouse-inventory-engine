@@ -33,7 +33,7 @@ enum Scenario: string
     public function responseOutcome(): Outcome
     {
         return match ($this) {
-            self::TimeoutThenSuccess => Outcome::Uncertain,
+            self::TimeoutThenSuccess => Outcome::Unknown,
             default => $this->providerOutcome(),
         };
     }

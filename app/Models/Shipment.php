@@ -46,4 +46,9 @@ class Shipment extends Model
     {
         return $this->hasMany(ShipmentItem::class);
     }
+
+    public function providerSubmissions(): HasMany
+    {
+        return $this->hasMany(ProviderSubmission::class);
+    }
 }

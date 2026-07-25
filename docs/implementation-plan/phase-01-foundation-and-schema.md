@@ -48,9 +48,9 @@ Scope:
 
 - Add the `ShippingProvider` contract.
 - Add native `final readonly` provider request, submission-result, and status-result DTOs under `app/DTOs/Shipping`.
-- Define only the submission outcomes consumed by this boundary: accepted, permanently failed, and timeout/uncertain.
+- Define only the submission outcomes consumed by this boundary: accepted, permanently failed, and unknown after timeout.
 - Keep callback intent separate from submission outcome. A deterministic scenario description may request immediate, delayed, duplicate, or out-of-order callback behavior without delivering callbacks yet.
-- Include provider status lookup by stable request key in the boundary so uncertain submissions can be reconciled without creating a new identity.
+- Include provider status lookup by stable request key in the boundary so submissions with unknown outcomes can be reconciled without creating a new identity.
 - Select the fake's deterministic scenario directly at construction; do not add a selector abstraction.
 - Implement an in-memory deterministic fake that can return each outcome without database, queue, or HTTP dependencies.
 - Bind the contract to the early in-memory fake for local/testing environments until Phase 5 replaces the local runtime binding with the persistent mock-provider adapter.
@@ -187,15 +187,15 @@ Scope:
 
 - Add `ProviderSubmission`/`provider_submissions` belonging to shipments.
 - Store a unique stable provider request key, submission state/outcome, provider identity where known, safe failure context, and lifecycle timestamps needed for reconciliation.
-- Before writing the migration, define and obtain owner approval for the exact persisted provider-submission states and their allowed meanings.
-- Keep submission preparation, provider acceptance, uncertainty, and permanent-failure meanings separate from shipment business state.
+- Persist the owner-approved `pending`, `accepted`, `unknown`, and `permanently_failed` provider-submission statuses with the meanings recorded in D39.
+- Keep submission preparation, provider acceptance, an unknown outcome after timeout, and permanent failure separate from shipment business state.
 - Add the model, relationships, casts, indexes, and factory states for provider submissions only.
 
 Done when:
 
 - A shipment can have independently recorded provider submissions without mixing them into shipment status.
 - Stable request keys and provider identities can support idempotent replay and reconciliation.
-- Uncertain and permanently failed submissions are efficiently discoverable.
+- Submissions with unknown outcomes and permanently failed submissions are efficiently discoverable.
 - Provider acceptance alone cannot represent shipment confirmation.
 
 ## Commit P1.11 — `feat: add mock-provider webhook reliability schema`

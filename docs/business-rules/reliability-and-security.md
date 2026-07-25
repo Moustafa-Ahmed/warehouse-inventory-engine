@@ -71,7 +71,7 @@ Core recovery paths:
 
 - Outstanding order items are discoverable by the backorder allocator.
 - Pending shipments are discoverable by the shipment command.
-- Uncertain provider submissions are discoverable by the provider-submission reconciliation command.
+- Provider submissions with unknown outcomes are discoverable by the provider-submission reconciliation command.
 - Due and retryable mock-provider webhooks are discoverable by the mock-provider dispatcher.
 - Pending provider webhook receipts are discoverable by the provider-webhook command.
 - Temporary reservations are discoverable by the expiration command.
@@ -158,4 +158,4 @@ Failures should include structured context:
 - Provider request key.
 - Exception class without leaked secrets.
 
-Operational screens expose pending, uncertain, and failed work without allowing silent data repair.
+Operational screens expose pending work, unknown outcomes, and failures without allowing silent data repair.
