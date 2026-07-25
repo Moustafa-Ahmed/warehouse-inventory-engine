@@ -65,7 +65,7 @@ Done when:
 Scope:
 
 - Create `docs/ARCHITECTURE.md` against the implemented code.
-- Describe domain model, schema, lifecycle, movements, projections, locking, idempotency, progress calculation, application services, readonly DTO boundaries, jobs, persistent mock-provider boundary, outbound HTTP delivery, inbound event processing, reconciliation, security, scaling, and trade-offs.
+- Describe domain model, schema, lifecycle, movements, projections, locking, idempotency, progress calculation, application services, readonly DTO boundaries, jobs, persistent mock-provider boundary, outbound HTTP delivery, provider webhook receipt processing, reconciliation, security, scaling, and trade-offs.
 - Explain the design patterns and SOLID principles actually used.
 - Link the business rules, ERD, and implementation evidence.
 - Update diagrams to match implemented behavior.
@@ -167,10 +167,10 @@ Provisionally demonstrate:
 2. Repeating the same reservation operation.
 3. Partial reservation completed after stock receipt.
 4. Provider timeout after acceptance, stable-key reconciliation, and late signed HTTP confirmation.
-5. Exact duplicate provider callback using the same external event ID and body.
+5. Exact duplicate provider webhook using the same external event ID and body.
 6. Injected transaction failure and rollback.
 
-Briefly show or explain smoke/focused evidence for worker retry, cancellation, partial shipment, transfer, out-of-order events, and permanent provider failure.
+Briefly show or explain smoke/focused evidence for worker retry, cancellation, partial shipment, transfer, out-of-order provider webhooks, and permanent provider failure.
 
 ## Optional Commit P7.O1 — `feat: reconcile ledger and balance projections`
 

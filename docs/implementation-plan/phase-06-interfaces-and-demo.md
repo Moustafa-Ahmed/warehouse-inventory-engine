@@ -100,7 +100,7 @@ Done when:
 - Outstanding quantity is always visible and partial allocation is never labelled as full.
 - Invalid state actions are absent or rejected server-side.
 
-## Commit P6.6 — `feat: add fulfillment shipment and event screens`
+## Commit P6.6 — `feat: add fulfillment shipment and webhook screens`
 
 **Priority:** Submission-critical
 
@@ -108,12 +108,12 @@ Scope:
 
 - Add valid pick, return, pack, and unpack controls.
 - Add shipment list/create/detail/submission screens.
-- Show provider attempts, uncertainty, permanent failure, and callback processing.
-- Show the related mock external shipment and outbound callback delivery history.
-- Add a provider-event inbox with safe status/error context.
+- Show provider submissions, uncertainty, permanent failure, and webhook processing.
+- Show the related mock-provider shipment and mock-provider webhook delivery history.
+- Add provider webhook receipt screens with safe status/error context.
 - Add retry controls that reuse the established provider request identity.
 - Add a local-only per-shipment provider-outcome selector.
-- Add local-only forms to send shipment confirmation, send delivery confirmation, replay the last webhook, and send an out-of-order delivery event.
+- Add local-only forms to send shipment confirmation, send delivery confirmation, replay the last webhook, and send an out-of-order delivery webhook.
 - Ensure every mock-provider form changes provider state or queues an HTTP callback; none may call shipment or inventory transition services directly.
 - Add these pages to the smoke suite.
 - Add one focused assertion that sensitive provider data is not rendered.
@@ -122,7 +122,7 @@ Done when:
 
 - The complete shipment lifecycle can be explained from the UI.
 - Administrators can inspect uncertain and permanently failed outcomes without exposing secrets.
-- A reviewer can trigger and trace an actual signed HTTP callback from the mock-provider outbound record to the received-event inbox and resulting inventory movement.
+- A reviewer can trigger and trace an actual signed HTTP callback from a mock-provider webhook to the provider webhook receipt and resulting inventory movement.
 
 ## Commit P6.7 — `feat: add operational query services and reports`
 
@@ -155,7 +155,7 @@ Scope:
 - Seed deterministic provider scenarios that use the controls already exposed on the shipment screen.
 - Add `demo:concurrent-reservation`.
 - Add a local-only `demo:inventory-scenarios` setup/reset command with explicit environment protection.
-- Include scenarios for partial allocation, timeout, permanent failure, duplicate callback, pending event, and shipment confirmation.
+- Include scenarios for partial allocation, timeout, permanent failure, duplicate callback, pending provider webhook receipt, and shipment confirmation.
 - Include the timeout-after-acceptance flow so reconciliation and late HTTP confirmation can be demonstrated.
 - Add one focused test proving demo controls are disabled outside local/testing environments.
 
@@ -189,7 +189,7 @@ Done when:
 Scope:
 
 - Build the dashboard only after the query services exist.
-- Show concise counts/lists for partial allocations, expiring reservations, pending or uncertain shipments, failed attempts, pending events, and recent movements.
+- Show concise counts/lists for partial allocations, expiring reservations, shipments pending handoff, uncertain or failed provider submissions, pending provider webhook receipts, and recent movements.
 - Link dashboard items to the corresponding operational screens.
 - Reuse query services rather than introducing dashboard-specific business queries.
 - Add the dashboard to the smoke suite.
@@ -230,7 +230,7 @@ Do not begin these commits until all submission-critical implementation, tests, 
 
 - [ ] One-administrator authentication protects operational routes
 - [ ] Web forms are validated, authorized, and CSRF-protected; business-mutation forms are idempotent
-- [ ] UI covers the minimum inventory, order, reservation, fulfillment, shipment, and provider-event workflows
+- [ ] UI covers the minimum inventory, order, reservation, fulfillment, shipment, and provider-webhook workflows
 - [ ] Query services answer stock, shipped, open-reservation, and consumed-inventory questions
 - [ ] Reports exist before the dashboard and Blade contains no query formulas
 - [ ] Partial results visibly distinguish requested, allocated, and outstanding quantities

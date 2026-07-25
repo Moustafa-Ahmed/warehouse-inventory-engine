@@ -41,7 +41,7 @@ app/DTOs/
 
 Rules:
 
-- Group cohesive operations in focused services such as `InventoryService`, `ReservationService`, `FulfillmentService`, `ShipmentService`, `ShipmentSubmissionService`, and `ProviderEventService`.
+- Group cohesive operations in focused services such as `InventoryService`, `ReservationService`, `FulfillmentService`, `ShipmentService`, `ShipmentSubmissionService`, and `ProviderWebhookService`.
 - Use descriptive typed methods such as `reserve()`, `release()`, `pick()`, `submit()`, and `confirmShipment()` rather than a generic `execute()` API.
 - Introduce a DTO with its first consuming service or external contract; do not create speculative request/result classes for later phases.
 - Keep DTOs as typed data carriers. Business orchestration, locking, idempotency, and state transitions remain in application services.
@@ -82,7 +82,7 @@ Rules:
 Planned screens:
 
 1. Administrator login.
-2. Dashboard for partial allocations, expiring reservations, pending or uncertain shipments, failed attempts, pending provider events, and recent movements.
+2. Dashboard for partial allocations, expiring reservations, shipments pending handoff, uncertain or failed provider submissions, pending provider webhook receipts, and recent movements.
 3. Product catalog with per-warehouse stock and outstanding demand.
 4. Warehouse catalog with current stock.
 5. Inventory balance details with receipt, adjustment, transfer, reservation, and movement forms or links.
@@ -92,11 +92,11 @@ Planned screens:
 9. Order list and detail with allocation, fulfillment, and delivery progress.
 10. Reservation detail and timeline with only valid reserve, confirm, release, pick, return, pack, and unpack actions.
 11. Backorder work queue with allocate-now action.
-12. Shipment list and detail with items, attempts, events, and submission controls.
-13. Provider-event inbox.
+12. Shipment list and detail with items, provider submissions, mock-provider webhooks, and submission controls.
+13. Provider webhook receipt list and detail.
 14. Local mock-provider controls for per-shipment outcome selection, shipment confirmation, delivery confirmation, exact webhook replay, and out-of-order delivery.
 
-The submission-critical UI is the minimum inventory, order/reservation, fulfillment/shipment, provider-event, reporting, and demonstration flow. Catalog create/edit convenience and the consolidated dashboard are supporting work: they remain planned, but may be simplified after the explicit post-Phase-5 time review because reference data and direct operational pages already support the core demonstration.
+The submission-critical UI is the minimum inventory, order/reservation, fulfillment/shipment, provider-webhook, reporting, and demonstration flow. Catalog create/edit convenience and the consolidated dashboard are supporting work: they remain planned, but may be simplified after the explicit post-Phase-5 time review because reference data and direct operational pages already support the core demonstration.
 
 Additional presentation-oriented screens may be added only after the submission-critical rules, tests, documents, evidence plan, and time review pass.
 
@@ -117,7 +117,7 @@ The application has two different HTTP concerns.
 POST /webhooks/shipping-provider
 ```
 
-The webhook is a machine-to-machine integration endpoint, not a general inventory API. It is outside session authentication because it uses HMAC, timestamp replay protection, provider/event identity, input validation, rate limiting, and durable event persistence.
+The webhook is a machine-to-machine integration endpoint, not a general inventory API. It is outside session authentication because it uses HMAC, timestamp replay protection, provider/webhook identity, input validation, rate limiting, and durable webhook-receipt persistence.
 
 ## 4. Artisan Commands
 
@@ -127,7 +127,7 @@ Core commands:
 shipments:process-pending
 inventory:allocate-backorders
 reservations:expire
-provider-events:process-pending
+provider-webhooks:process-pending
 ```
 
 Demonstration commands:
@@ -135,8 +135,8 @@ Demonstration commands:
 ```text
 demo:concurrent-reservation
 demo:inventory-scenarios
-mock-provider:send-event
-mock-provider:replay-event
+mock-provider:send-webhook
+mock-provider:replay-webhook
 ```
 
 Provider recovery commands:
@@ -161,7 +161,7 @@ Planned jobs:
 - Allocate an outstanding order item after stock receipt.
 - Submit a shipment through the provider.
 - Reconcile an uncertain shipment by stable provider request key.
-- Process a persisted provider event.
+- Process a persisted provider webhook receipt.
 - Deliver a persisted mock-provider callback over signed HTTP.
 
 Every job is idempotent and may execute more than once.
@@ -172,9 +172,9 @@ Core schedules:
 
 - Process pending shipments.
 - Reconcile uncertain shipment submissions.
-- Deliver due and retryable mock-provider outbound events.
+- Deliver due and retryable mock-provider webhooks.
 - Expire temporary reservations.
-- Process pending provider events.
+- Process pending provider webhook receipts.
 - Allocate outstanding order items.
 
 Scheduled commands prevent overlap. Production multi-server deployment would also use a shared lock and single-server scheduling.
@@ -191,9 +191,9 @@ Scheduled commands prevent overlap. Production multi-server deployment would als
 - Temporary reservation expiration.
 - Pick, return, pack, and unpack.
 - Partial and multiple shipments.
-- Persistent mock-provider shipments and outbound-event delivery history.
+- Persistent mock-provider shipments and mock-provider webhook delivery history.
 - Mock provider success, failure, timeout-after-acceptance, delay, duplicate, replay, reconciliation, and out-of-order callbacks.
-- Provider-event inbox and HMAC validation.
+- Provider webhook receipts and HMAC validation.
 - Central idempotency records.
 - Artisan commands, queued jobs, scheduler, signed provider webhook, and minimal operational Blade UI.
 - Factories, seeders, tests, documentation, evidence, and video.

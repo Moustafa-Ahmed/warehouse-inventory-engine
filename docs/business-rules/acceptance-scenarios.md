@@ -98,25 +98,25 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 
 ## 13. Permanent Provider Failure
 
-**Given** a packed shipment  
-**When** the provider permanently rejects it  
-**Then** the attempt becomes permanently failed  
-**And** inventory remains packed  
+**Given** a packed shipment<br>
+**When** the provider permanently rejects it<br>
+**Then** the provider submission becomes permanently failed<br>
+**And** inventory remains packed<br>
 **And** no inventory deduction occurs.
 
 ## 14. Duplicate Shipment Callback
 
-**Given** a shipment-confirmed event has been processed  
-**When** the provider sends the same external event again  
-**Then** the callback is acknowledged  
+**Given** a `shipment.confirmed` webhook has been processed<br>
+**When** the provider sends the same webhook again<br>
+**Then** the callback is acknowledged<br>
 **And** no additional shipment movement or quantity update occurs.
 
 ## 15. Out-of-Order Delivery Callback
 
-**Given** the local shipment is not confirmed  
-**When** a delivered event arrives  
-**Then** the event is persisted as pending  
-**And** inventory is not deducted by the delivery event  
+**Given** the shipment is not confirmed<br>
+**When** a delivery-confirmed webhook arrives<br>
+**Then** its provider webhook receipt is persisted as pending<br>
+**And** inventory is not deducted by the delivery webhook<br>
 **And** processing resumes only when prerequisite state exists.
 
 ## 16. Reservation Expiration
@@ -180,27 +180,27 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 
 **Given** the provider accepts a packed shipment<br>
 **When** no shipment-confirmed callback has been processed<br>
-**Then** the local shipment is not marked shipped<br>
+**Then** the shipment is not marked shipped<br>
 **And** inventory remains packed.
 
 ## 25. Manual Mock Confirmation
 
 **Given** an accepted mock-provider shipment in the local environment<br>
 **When** the administrator requests “Send shipment confirmation now”<br>
-**Then** the mock provider persists an outbound event and sends a signed HTTP callback<br>
-**And** the control does not call the local shipment-confirmation service directly<br>
+**Then** the mock provider persists a webhook and sends it as a signed HTTP callback<br>
+**And** the control does not call the shipment-confirmation service directly<br>
 **And** inventory moves to shipped only after webhook processing.
 
 ## 26. Outbound Transport Retry
 
-**Given** a persisted mock-provider outbound event<br>
+**Given** a persisted mock-provider webhook<br>
 **When** its HTTP delivery times out or receives a retryable response<br>
 **Then** it remains retryable with the same external event ID and raw body<br>
-**And** a later successful delivery creates at most one received event and one business effect.
+**And** a later successful delivery creates at most one provider webhook receipt and one business effect.
 
 ## 27. Reconciliation Does Not Bypass the Webhook
 
 **Given** an uncertain local submission whose provider status is handoff confirmed<br>
 **When** reconciliation queries the stable provider request key<br>
-**Then** the existing provider confirmation event becomes deliverable again<br>
+**Then** the existing mock-provider confirmation webhook becomes deliverable again<br>
 **And** reconciliation itself does not deduct inventory.

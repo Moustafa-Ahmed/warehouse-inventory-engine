@@ -55,13 +55,13 @@ Scope:
 - Implement an in-memory deterministic fake that can return each outcome without database, queue, or HTTP dependencies.
 - Bind the contract to the early in-memory fake for local/testing environments until Phase 5 replaces the local runtime binding with the persistent mock-provider adapter.
 - Add one focused outcome-mapping dataset.
-- Do not define local shipment, provider-attempt, delivery-progress, outbound-event, or inbox-processing statuses in this boundary commit.
+- Do not define `Shipment`, `ProviderSubmission`, `MockProviderShipment`, `MockProviderWebhook`, or `ProviderWebhookReceipt` persistence or statuses in this boundary commit.
 
 Done when:
 
 - Provider-facing code can depend on a stable interface from the start.
 - Every required submission outcome and callback-intent scenario can be selected deterministically without mixing their meanings.
-- The small in-memory fake remains useful for isolated contract tests, while random selection, callback delivery, HMAC, and persistence remain intentionally deferred until the shipment/event infrastructure exists.
+- The small in-memory fake remains useful for isolated contract tests, while random selection, callback delivery, HMAC, and persistence remain intentionally deferred until the shipment/webhook infrastructure exists.
 
 ## Commit P1.4 — `feat: add product and warehouse catalogs`
 
@@ -161,21 +161,21 @@ Done when:
 
 Scope:
 
-- Add shipments and shipment items.
-- Add provider submission attempts with stable provider request keys and outcomes.
-- Add mock-provider shipments with unique request keys, external identities, forced/random scenario metadata, provider status, and lifecycle timestamps.
-- Add mock-provider outbound events with immutable event identity/body, delivery schedule, status, attempts, and safe response/error context.
-- Add provider-event inbox with unique provider/external-event identity, raw payload, occurrence time, processing status, and safe error context.
-- Before writing the migrations, define and record the exact persisted values for each table. Keep local shipment business state, local provider-attempt state/outcome, mock-provider shipment state, outbound-delivery state, and received-event processing state in separate enums.
-- Do not place delivery progress, provider acceptance, uncertainty, or attempt failure into one catch-all shipment status.
+- Add `Shipment`/`shipments` and `ShipmentItem`/`shipment_items`.
+- Add `ProviderSubmission`/`provider_submissions` with stable provider request keys and submission outcomes.
+- Add `MockProviderShipment`/`mock_provider_shipments` with unique request keys, external identities, forced/random scenario metadata, provider status, and lifecycle timestamps.
+- Add `MockProviderWebhook`/`mock_provider_webhooks` with immutable webhook identity/body, delivery schedule, delivery status, attempt count, and safe response/error context.
+- Add `ProviderWebhookReceipt`/`provider_webhook_receipts` with unique provider/external-event identity, raw payload, occurrence time, processing status, and safe error context.
+- Before writing the migrations, define and record the exact persisted values for each table. Keep shipment business state, provider-submission state/outcome, mock-provider shipment state, mock-provider webhook delivery state, and provider-webhook-receipt processing state in separate enums.
+- Do not place delivery progress, provider acceptance, uncertainty, or provider-submission failure into one catch-all shipment status.
 - Add models, relationships, casts, indexes, and factory states.
 
 Done when:
 
 - One order supports multiple warehouse-specific shipments.
-- Provider attempts are distinct from shipment business state.
-- Mock-provider external state is distinct from local attempts and the received-event inbox.
-- Due callbacks and uncertain provider shipments are efficiently discoverable.
+- Provider submissions are distinct from shipment business state.
+- Mock-provider shipment and webhook state are distinct from provider submissions and provider webhook receipts.
+- Due mock-provider webhooks and uncertain provider submissions are efficiently discoverable.
 - Duplicate external event IDs are rejected by the database.
 
 ## Commit P1.10 — `feat: seed reference warehouse data`
@@ -186,7 +186,7 @@ Scope:
 
 - Seed products, warehouses, and zero-valued inventory balance reference data.
 - Keep factories for important isolated states used by focused tests.
-- Do not directly seed non-zero balances, movements, orders, reservations, shipments, attempts, events, or histories.
+- Do not directly seed non-zero balances, movements, orders, reservations, shipments, provider submissions, mock-provider shipments, mock-provider webhooks, provider webhook receipts, or histories.
 - Reserve coherent end-to-end scenario data for Phase 6, after the application services exist.
 - Add a `migrate:fresh --seed` smoke test.
 
@@ -205,7 +205,7 @@ Done when:
 - [ ] Factories produce valid isolated and related models
 - [ ] Reference seed data loads without bypassing inventory services
 - [ ] Schema includes all challenge-required tables
-- [ ] Persisted status enums belong to their actual tables and do not mix shipment, attempt, provider, event, or delivery meanings
+- [ ] Persisted status enums belong to their actual tables and do not mix shipment, provider-submission, mock-provider-shipment, webhook-delivery, webhook-receipt-processing, or delivery-progress meanings
 - [ ] No categorical order-progress status exists before P3.1 defines and the owner approves its meaning
 - [ ] The smoke suite and applicable focused tests pass
 - [ ] Pint passes on changed PHP

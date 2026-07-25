@@ -72,13 +72,13 @@ Core recovery paths:
 - Outstanding order items are discoverable by the backorder allocator.
 - Pending shipments are discoverable by the shipment command.
 - Uncertain shipment submissions are discoverable by the provider reconciliation command.
-- Due and retryable mock-provider outbound events are discoverable by the mock-provider dispatcher.
-- Pending provider events are discoverable by the provider-event command.
+- Due and retryable mock-provider webhooks are discoverable by the mock-provider dispatcher.
+- Pending provider webhook receipts are discoverable by the provider-webhook command.
 - Temporary reservations are discoverable by the expiration command.
 
-## 5. Provider Event Inbox
+## 5. Provider Webhook Receipts
 
-Callbacks are persisted before business processing.
+Callbacks are persisted as provider webhook receipts before business processing.
 
 The unique identity is:
 
@@ -98,9 +98,9 @@ Rules:
 
 - Duplicate callbacks are acknowledged successfully.
 - A duplicate does not create another movement or transition.
-- Valid next-state events process immediately or through a job.
-- An event ahead of the local state remains pending.
-- A stale event is stored and ignored.
+- Valid next-state webhooks process immediately or through a job.
+- A webhook ahead of the shipment state remains pending.
+- A stale webhook receipt is stored and ignored.
 - Provider delivery order is never assumed.
 
 ## 6. HMAC Webhook Verification
@@ -118,11 +118,11 @@ The webhook endpoint verifies:
 3. HMAC using the configured provider secret.
 4. Signature comparison uses a timing-safe function.
 5. JSON structure and supported event type.
-6. Event uniqueness before processing.
+6. Webhook-receipt uniqueness before processing.
 
 Secrets are read through configuration and are never committed.
 
-The local mock provider sends callbacks to the configured webhook URL over actual HTTP. It persists the event before sending, retries transient transport failures with the same external event ID and raw body, and records delivery attempts. Tests fake outbound HTTP so the suite does not depend on a running server.
+The local mock provider sends callbacks to the configured webhook URL over actual HTTP. It persists the mock-provider webhook before sending, retries transient transport failures with the same external event ID and raw body, and records delivery attempts. Tests fake outbound HTTP so the suite does not depend on a running server.
 
 A provider status response can reconcile submission state but cannot mark inventory shipped. Shipment deduction remains exclusively webhook-driven.
 
@@ -153,7 +153,7 @@ Failures should include structured context:
 
 - Operation key and type.
 - Product and warehouse identifiers.
-- Order, reservation, shipment, or provider-event identifiers.
+- Order, reservation, shipment, provider-submission, or provider-webhook-receipt identifiers.
 - Job attempt.
 - Provider request key.
 - Exception class without leaked secrets.

@@ -17,7 +17,7 @@ They cover:
 - The application boots.
 - A fresh MySQL database migrates and seeds.
 - Guest users are redirected from protected operational pages.
-- An authenticated administrator can load the primary inventory, order, reservation, shipment, event, and report pages.
+- An authenticated administrator can load the primary inventory, order, reservation, shipment, provider webhook receipt, and report pages.
 - Required Artisan commands are registered and can run safely with no eligible work.
 - One representative browser-form workflow reaches the shared application service and redirects with a visible result.
 - The production frontend build succeeds.
@@ -37,8 +37,8 @@ Important methods and boundaries:
 - Shipment-confirmation inventory deduction.
 - Pending-shipment command and submission job.
 - Mock-provider outcome mapping, stable-key identity, and status lookup.
-- Mock-provider outbound-event delivery and retry state.
-- Provider-event persistence and processing.
+- Mock-provider webhook delivery and retry state.
+- Provider webhook receipt persistence and processing.
 
 Required risks to prove:
 
@@ -53,10 +53,10 @@ Required risks to prove:
 9. A timeout leaves stock packed and a late confirmation can safely resolve it.
 10. A duplicate or retried job cannot create another shipment effect.
 11. A valid signed callback is processed once; an invalid signature is rejected.
-12. Duplicate and out-of-order provider events cannot deduct inventory twice or skip prerequisites.
+12. Duplicate and out-of-order provider webhooks cannot deduct inventory twice or skip prerequisites.
 13. Provider acceptance alone cannot mark a shipment shipped.
 14. Status reconciliation cannot bypass the callback or create a second external shipment.
-15. Retried outbound HTTP delivery reuses the same event identity and produces at most one business effect.
+15. Retried outbound HTTP delivery reuses the same webhook identity and produces at most one business effect.
 
 Use a dataset when several provider outcomes or state transitions share the same setup. Do not create separate repetitive test classes merely to increase test count.
 

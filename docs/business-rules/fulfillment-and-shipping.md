@@ -70,7 +70,7 @@ Rules:
 - Shipment quantity cannot exceed eligible packed quantity.
 - Creating a shipment does not reduce warehouse on-hand stock.
 
-## 6. Submission and Provider Attempts
+## 6. Shipment Submission
 
 A pending shipment is submitted asynchronously.
 
@@ -79,10 +79,10 @@ Rules:
 - The processing command discovers eligible pending shipments.
 - A queued job calls the provider outside database transactions that lock inventory.
 - Every provider request uses a stable request key.
-- Provider attempts are recorded independently from the shipment’s business state.
+- Provider submissions are recorded independently from the shipment’s business state.
 - A duplicate job must not create another external shipment.
 - An accepted provider response records acceptance only; it does not mark the shipment shipped.
-- The local shipment is marked shipped only after a valid `shipment.confirmed` callback is persisted and processed.
+- The shipment is marked shipped only after a valid `shipment.confirmed` webhook is persisted as a `ProviderWebhookReceipt` and processed.
 
 ## 7. Provider Outcomes
 
@@ -94,7 +94,7 @@ The provider may accept immediately and make its confirmation callback due immed
 
 A timeout means the external outcome is unknown:
 
-- Shipment becomes submission-uncertain.
+- The provider submission becomes uncertain.
 - Packed and on-hand balances do not change.
 - Retry, provider status lookup, or reconciliation reuses the same provider request key.
 - A later callback may resolve the state.
@@ -102,15 +102,15 @@ A timeout means the external outcome is unknown:
 
 ### Permanent Failure
 
-- The provider attempt is permanently failed.
+- The provider submission is permanently failed.
 - Warehouse inventory remains packed.
 - No inventory deduction occurs.
-- A new shipment attempt may be created.
+- A new provider submission may be created.
 - Releasing the stock requires explicit unpack and return operations.
 
 ## 8. Shipment Confirmation
 
-A valid shipment-confirmed event moves stock:
+A valid `shipment.confirmed` webhook moves stock:
 
 ```text
 Warehouse / Packed -> External / Shipped
@@ -118,19 +118,19 @@ Warehouse / Packed -> External / Shipped
 
 The confirmation transaction:
 
-1. Claims the provider event.
+1. Claims the provider webhook receipt.
 2. Locks the shipment, affected reservations, and inventory balance rows.
 3. Validates the shipment is eligible.
 4. Appends the canonical movement.
 5. Reduces packed projection quantity.
 6. Increases shipped progress on shipment, reservation, and order-item projections.
 7. Appends transition history.
-8. Marks the event processed.
+8. Marks the webhook receipt processed.
 9. Commits atomically.
 
 Repeating confirmation cannot deduct stock twice.
 
-Provider status lookup cannot run this transaction directly. If reconciliation discovers confirmed handoff but the callback was lost, the provider must redeliver its existing signed confirmation event.
+Provider status lookup cannot run this transaction directly. If reconciliation discovers confirmed handoff but the callback was lost, the provider must redeliver its existing signed confirmation webhook.
 
 ## 9. Delivery
 
@@ -140,7 +140,7 @@ Rules:
 
 - Delivered quantity must already be shipped.
 - Delivery may be partial.
-- Duplicate delivery events do not repeat effects.
+- Duplicate delivery webhooks do not repeat effects.
 - An order becomes delivered only when every shipped quantity is delivered.
 - A delivery failure does not place goods back into warehouse inventory.
 

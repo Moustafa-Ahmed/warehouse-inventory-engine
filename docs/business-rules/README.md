@@ -47,7 +47,7 @@ flowchart TD
     N --> O["Submit through queued provider job"]
     O --> P{"Provider response"}
     P -->|"Timeout"| Q["Keep state uncertain and reconcile with the same provider key"]
-    P -->|"Permanent failure"| R["Keep stock packed for a new attempt or explicit reversal"]
+    P -->|"Permanent failure"| R["Keep stock packed for a new provider submission or explicit reversal"]
     P -->|"Accepted"| U["Wait for signed shipment-confirmed webhook"]
     Q --> U
     U --> S["Move packed stock to shipped"]

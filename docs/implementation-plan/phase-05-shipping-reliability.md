@@ -2,19 +2,19 @@
 
 ## Objective
 
-Turn the Phase 1 provider boundary and schema into a persistent mock external system, then integrate it with shipment attempts, actual signed HTTP callbacks, explicit timeout reconciliation, duplicate safety, and scheduled recovery.
+Turn the Phase 1 provider boundary and schema into a persistent mock external system, then integrate it with provider submissions, actual signed HTTP callbacks, explicit timeout reconciliation, duplicate safety, and scheduled recovery.
 
 Provider calls never run inside an inventory-locking transaction. Jobs and commands locate work and invoke application services; they do not contain shipment or inventory rules. A provider response may change submission state, but only a valid persisted callback may move packed inventory to shipped.
 
-## Commit P5.1 — `feat: prepare idempotent shipment submission attempts`
+## Commit P5.1 — `feat: prepare idempotent provider submissions`
 
 **Priority:** Submission-critical
 
 Scope:
 
 - Implement `ShipmentSubmissionService::prepare()` to lock an eligible packed shipment.
-- Reuse the Phase 1 shipping DTOs at the provider boundary; add a new readonly preparation result only if the service needs to carry local attempt identity alongside the provider request.
-- Create or reuse a provider attempt with a stable provider request key.
+- Reuse the Phase 1 shipping DTOs at the provider boundary; add a new readonly preparation result only if the service needs to carry `ProviderSubmission` identity alongside the provider request.
+- Create or reuse a `ProviderSubmission` with a stable provider request key.
 - Persist the submission-ready state before any provider call.
 - Reject ineligible, duplicate, or terminal shipment submissions.
 - Commit before returning the provider request object.
@@ -23,7 +23,7 @@ Scope:
 Done when:
 
 - The provider request identity exists durably before external work.
-- Repeating preparation returns the same active attempt and provider key.
+- Repeating preparation returns the same active provider submission and request key.
 - No provider call occurs while shipment or inventory locks are held.
 
 ## Commit P5.2 — `feat: persist mock-provider shipments and outcomes`
@@ -34,24 +34,24 @@ Scope:
 
 - Implement the persistent local `ShippingProvider` adapter using the Phase 1 contract.
 - Replace the local runtime binding to the Phase 1 in-memory fake while retaining that small fake for isolated contract tests.
-- Create or find one mock external shipment by stable provider request key.
+- Create or find one `MockProviderShipment` by stable provider request key.
 - Return the existing external identity for repeated submission.
 - Implement provider status lookup by request key.
 - Apply a per-shipment forced scenario when present; otherwise use configurable weighted random selection.
-- Persist accepted, permanently rejected, and handoff/delivery provider states independently from local shipment state.
-- Persist immediate, delayed, timeout-followed-by-success, delivery, and out-of-order event intents as mock-provider outbound events.
-- Model exact duplicate delivery as another delivery attempt of the same event ID and immutable raw body, not a second business event.
+- Persist accepted, permanently rejected, and handoff/delivery provider states independently from the warehouse application's shipment state.
+- Persist immediate, delayed, timeout-followed-by-success, delivery, and out-of-order webhook intents as `MockProviderWebhook` records.
+- Model exact duplicate delivery as another delivery attempt of the same webhook ID and immutable raw body, not a second webhook.
 - For timeout-after-acceptance, commit the external shipment and future callback before simulating the lost response.
 - Add one focused deterministic dataset under the concrete Shipping test area for stable identity, outcome mapping, status lookup, and timeout-after-acceptance.
 
 Done when:
 
 - Every required outcome is reproducible without randomness.
-- Repeated submission cannot create a second mock external shipment.
+- Repeated submission cannot create a second mock-provider shipment.
 - Provider state and future callback intent survive worker restarts and simulated timeouts.
 - No callback is delivered and no warehouse inventory changes in this commit.
 
-## Commit P5.3 — `feat: verify and persist signed provider callbacks`
+## Commit P5.3 — `feat: verify and persist provider webhooks`
 
 **Priority:** Submission-critical
 
@@ -59,9 +59,9 @@ Scope:
 
 - Implement shared HMAC signing/verification over timestamp and raw body.
 - Add `POST /webhooks/shipping-provider`.
-- Convert validated callback input into a readonly shipping DTO before passing it to the provider-event service; do not pass the raw request or an untyped array into business orchestration.
+- Convert validated callback input into a readonly shipping DTO before passing it to the provider-webhook service; do not pass the raw request or an untyped array into business orchestration.
 - Validate provider, event ID, timestamp replay window, signature, JSON structure, quantities, and supported event type.
-- Persist the received provider event before dispatching processing.
+- Persist a `ProviderWebhookReceipt` before dispatching processing.
 - Acknowledge duplicates using the unique provider/external-event key.
 - Rate limit the webhook independently from session-authenticated routes.
 - Use one focused security dataset for valid, missing, expired, invalid, malformed, and duplicate callback input.
@@ -78,7 +78,7 @@ Done when:
 
 Scope:
 
-- Implement `DeliverMockProviderWebhookJob` for one persisted due outbound event.
+- Implement `DeliverMockProviderWebhookJob` for one persisted due `MockProviderWebhook`.
 - Send an actual HTTP `POST` to the configured webhook URL in local demonstration.
 - Require the callback job to run on a non-synchronous queue worker so a loopback request cannot block the original administrator request.
 - Send the persisted external event ID and raw body with a current timestamp and matching HMAC signature.
@@ -87,7 +87,7 @@ Scope:
 - Mark non-retryable authentication, validation, and configuration responses visibly failed rather than retrying forever.
 - Record attempt count, timestamps, and safe response/error context without signatures or secrets.
 - Implement bounded `mock-provider:dispatch-pending` discovery.
-- Fake outbound HTTP in tests and assert URL, safe headers, stable event identity/body, acknowledgement, retryable failure, and permanent transport failure.
+- Fake outbound HTTP in tests and assert URL, safe headers, stable webhook identity/body, acknowledgement, retryable failure, and permanent transport failure.
 
 Done when:
 
@@ -106,9 +106,9 @@ Scope:
 - Depend on `ShippingProvider`, not the persistent mock implementation.
 - Consume the existing provider request/result DTOs and keep submission outcome separate from callback-delivery intent.
 - Make the provider call outside database transactions.
-- Record accepted, permanent failure, and timeout/uncertain results through short follow-up transactions owned by the service.
+- Record accepted, permanent failure, and timeout/uncertain results on the `ProviderSubmission` through short follow-up transactions owned by the service.
 - Never interpret provider acceptance as shipment confirmation.
-- Ensure immediate success means an immediately due outbound callback, not direct inventory deduction.
+- Ensure immediate success means an immediately due mock-provider webhook, not direct inventory deduction.
 - Use explicit connection and request timeouts at provider adapter boundaries.
 - Add one focused outcome dataset using the deterministic provider implementation.
 
@@ -135,7 +135,7 @@ Scope:
 
 Done when:
 
-- Running the command repeatedly cannot create duplicate provider attempts or external shipment identities.
+- Running the command repeatedly cannot create duplicate provider submissions or external shipment identities.
 - A permanent rejection is not retried forever.
 - The job and command contain no inventory mutation logic.
 
@@ -149,7 +149,7 @@ Scope:
 - Implement bounded `shipments:reconcile-uncertain` discovery and thin reconciliation jobs.
 - Keep packed and on-hand quantities unchanged while the local outcome is uncertain.
 - Record provider acceptance or rejection without treating status lookup as shipment confirmation.
-- If provider handoff is confirmed but its callback is unacknowledged, make the existing outbound confirmation event due for redelivery.
+- If provider handoff is confirmed but its callback is unacknowledged, make the existing mock-provider confirmation webhook due for redelivery.
 - Allow idempotent resubmission with the same key as a fallback without creating another external shipment.
 - Add one critical timeout-after-acceptance, status-lookup, callback-redelivery, and late-success scenario.
 
@@ -159,18 +159,18 @@ Done when:
 - Status lookup and resubmission cannot create a second provider shipment identity.
 - Reconciliation cannot deduct inventory or bypass the signed callback.
 
-## Commit P5.8 — `feat: apply shipment confirmation events atomically`
+## Commit P5.8 — `feat: apply shipment confirmation webhooks atomically`
 
 **Priority:** Submission-critical
 
 Scope:
 
 - Implement shipment confirmation through `ShipmentService::confirmHandoff()`.
-- Extend the operation-type enum with shipment confirmation here, where the persisted provider event and shipment service consume it.
+- Extend the operation-type enum with shipment confirmation here, where the persisted provider webhook receipt and shipment service consume it.
 - Lock shipment, reservation, shipment-item, and balance records in deterministic order.
 - Move packed stock to external/shipped exactly once.
-- Update shipment, reservation, order item, operation, movement, history, and received event in one transaction.
-- Implement `ProviderEventService` to classify and route persisted events, with `ProcessProviderEventJob` as its thin queued adapter.
+- Update shipment, reservation, order item, operation, movement, history, and provider webhook receipt in one transaction.
+- Implement `ProviderWebhookService` to classify and route persisted receipts, with `ProcessProviderWebhookJob` as its thin queued adapter.
 - Add critical duplicate-confirmation, rollback, and worker-retry scenarios.
 
 Done when:
@@ -186,11 +186,11 @@ Done when:
 Scope:
 
 - Implement delivery confirmation through `ShipmentService::confirmDelivery()`.
-- Extend the operation-type enum with delivery confirmation here; the persisted provider event supplies the stable identity for the central operation record.
+- Extend the operation-type enum with delivery confirmation here; the persisted provider webhook receipt supplies the stable identity for the central operation record.
 - Apply partial and complete delivery progress only to shipped quantities.
 - Do not modify warehouse balance projections.
 - Recalculate progress through the shared calculator.
-- Keep delivery progress separate from local shipment submission and provider-attempt statuses; do not duplicate delivery labels inside those enums.
+- Keep delivery progress separate from shipment and provider-submission statuses; do not duplicate delivery labels inside those enums.
 - Handle delayed and exact duplicate delivery confirmation.
 - Add one focused delivery-progress and duplicate scenario.
 
@@ -198,25 +198,25 @@ Done when:
 
 - Delivery can never reintroduce or deduct warehouse inventory.
 - An order becomes delivered only when all shipped quantity is delivered.
-- Replaying the same delivery event has one business effect.
+- Replaying the same delivery webhook has one business effect.
 
-## Commit P5.10 — `feat: defer stale and out-of-order provider events`
+## Commit P5.10 — `feat: defer stale and out-of-order provider webhooks`
 
 **Priority:** Submission-critical
 
 Scope:
 
-- Implement an event classifier for stale, valid-next, and future events.
-- Mark stale events ignored without error.
-- Keep future events pending.
-- Implement `provider-events:process-pending` as a bounded recovery command.
-- Route valid events through `ProviderEventService` to the already implemented `ShipmentService` methods.
-- Add one out-of-order scenario proving an event waits and later processes once.
+- Implement a webhook classifier for stale, valid-next, and future receipts.
+- Mark stale webhook receipts ignored without error.
+- Keep future webhook receipts pending.
+- Implement `provider-webhooks:process-pending` as a bounded recovery command.
+- Route valid receipts through `ProviderWebhookService` to the already implemented `ShipmentService` methods.
+- Add one out-of-order scenario proving a webhook receipt waits and later processes once.
 
 Done when:
 
 - Delivery arriving before shipment confirmation cannot skip inventory movement.
-- Pending events eventually process after prerequisites exist.
+- Pending provider webhook receipts eventually process after prerequisites exist.
 
 ## Commit P5.11 — `feat: add guarded mock-provider scenario controls`
 
@@ -225,10 +225,10 @@ Done when:
 Scope:
 
 - Implement `MockProviderControlService` with local/testing-only methods to set a shipment's next forced provider scenario.
-- Implement controls to create or release shipment-confirmed and delivery-confirmed outbound events.
+- Implement controls to create or release shipment-confirmed and delivery-confirmed mock-provider webhooks.
 - Implement exact replay using the original external event ID and raw body.
 - Implement the deliberate out-of-order delivery control.
-- Add guarded `mock-provider:send-event` and `mock-provider:replay-event` commands.
+- Add guarded `mock-provider:send-webhook` and `mock-provider:replay-webhook` commands.
 - Reject controls outside local/testing environments and for non-mock provider adapters.
 - Ensure controls mutate only mock-provider state or dispatch callback delivery; they never invoke warehouse shipment or inventory services directly.
 - Add a focused authorization/environment test and a small control-mapping dataset.
@@ -236,7 +236,7 @@ Scope:
 Done when:
 
 - Every required provider scenario can be triggered deterministically.
-- “Send shipment confirmation now” still reaches warehouse state only through signed HTTP and the persisted inbox.
+- “Send shipment confirmation now” still reaches warehouse state only through signed HTTP and the persisted provider webhook receipt.
 - Demo-only behavior cannot be exposed accidentally in production.
 
 ## Commit P5.12 — `feat: schedule persisted shipping recovery`
@@ -247,8 +247,8 @@ Scope:
 
 - Schedule pending-shipment discovery.
 - Schedule uncertain-submission reconciliation.
-- Schedule due/retryable mock-provider outbound callback delivery.
-- Schedule pending received provider-event processing.
+- Schedule due/retryable mock-provider webhook delivery.
+- Schedule pending provider webhook receipt processing.
 - Schedule backorder allocation.
 - Schedule reservation expiration when the supporting expiration task is included; otherwise record it for the time review and final limitations.
 - Use overlap prevention.
@@ -266,7 +266,7 @@ Done when:
 ## Phase Gate
 
 - [ ] Shipment submission service uses the early provider contract and persistent deterministic mock provider
-- [ ] Mock external shipments and outbound events persist independently from local attempts and the inbox
+- [ ] Mock-provider shipments and webhooks persist independently from provider submissions and provider webhook receipts
 - [ ] Provider calls occur outside database transactions and inventory locks
 - [ ] Pending-shipment command and job are thin, bounded, and repeat-safe
 - [ ] Provider acceptance alone cannot mark a shipment shipped
@@ -275,8 +275,8 @@ Done when:
 - [ ] Reconciliation cannot bypass the shipment-confirmed webhook
 - [ ] HMAC validation and replay protection pass
 - [ ] Local/demo callback delivery uses actual signed HTTP
-- [ ] Outbound transport retries retain one event identity and are observable
-- [ ] Duplicate and out-of-order received events are safe
+- [ ] Outbound transport retries retain one webhook identity and are observable
+- [ ] Duplicate and out-of-order provider webhook receipts are safe
 - [ ] Shipment confirmation is atomic with inventory deduction
 - [ ] Every challenge-required mock-provider mode is deterministic and random mode remains available
 - [ ] Demo controls are unavailable outside local/testing environments

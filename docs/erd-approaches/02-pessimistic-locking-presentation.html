@@ -1682,7 +1682,7 @@ CHECK (
                     <article class="flow-card"><span class="tag">01 · DB</span><h3>Claim shipment</h3><p>Short transaction changes pending → submitting and commits.</p></article>
                     <article class="flow-card"><span class="tag">02 · HTTP</span><h3>Call provider</h3><p>Outside the transaction, with timeout and stable request key.</p></article>
                     <article class="flow-card"><span class="tag">03 · DB</span><h3>Record response</h3><p>Lock shipment; store accepted, failed, or uncertain result.</p></article>
-                    <article class="flow-card"><span class="tag">04 · WEBHOOK</span><h3>Receive event</h3><p>Insert unique provider event, acknowledge duplicates safely.</p></article>
+                    <article class="flow-card"><span class="tag">04 · WEBHOOK</span><h3>Receive webhook</h3><p>Insert a unique provider webhook receipt and acknowledge duplicates safely.</p></article>
                     <article class="flow-card"><span class="tag">05 · DB</span><h3>Apply once</h3><p>Lock affected rows, ship packed quantity, append movement, commit.</p></article>
                 </div>
                 <p class="muted" style="margin-top: 18px;">Dispatch follow-up jobs after commit. If delivery to the queue itself must be guaranteed, persist an outbox message in the same transaction and publish it asynchronously.</p>
@@ -1767,7 +1767,7 @@ CHECK (
                     <div class="check">The same idempotency key is submitted twice; balances and movement count change once.</div>
                     <div class="check">An exception after the reservation insert rolls back inventory, history, and reservation together.</div>
                     <div class="check">A partial pick, pack, ship, and release preserves every quantity invariant.</div>
-                    <div class="check">A duplicate provider event produces one shipment transition and one inventory movement.</div>
+                    <div class="check">A duplicate provider webhook produces one shipment transition and one inventory movement.</div>
                     <div class="check">A timeout followed by success with the same provider key creates one external shipment.</div>
                     <div class="check">A permanent failure never consumes on-hand inventory and leaves an auditable reason.</div>
                     <div class="check">Transfers and multi-line orders lock rows in the same deterministic order.</div>
@@ -1825,7 +1825,7 @@ CHECK (
                     <ul class="clean-list">
                         <li>Use database uniqueness for every operation key.</li>
                         <li>Treat queue uniqueness as an optimization.</li>
-                        <li>Persist raw provider events before processing.</li>
+                        <li>Persist provider webhook receipts before processing.</li>
                         <li>Append movement and transition history atomically.</li>
                         <li>Test concurrency against MySQL.</li>
                     </ul>
@@ -2036,12 +2036,12 @@ CHECK (
                 },
                 delayed: {
                     title: 'Delayed confirmation',
-                    copy: 'The request is accepted now, but shipment confirmation arrives later. The local shipment remains in an intermediate state without holding database locks.',
+                    copy: 'The request is accepted now, but shipment confirmation arrives later. The shipment remains pending handoff without holding database locks.',
                     points: ['Persist the provider shipment ID.', 'Let a scheduled reconciliation job poll if needed.', 'Apply confirmation through the same idempotent handler.']
                 },
                 duplicate: {
                     title: 'Duplicate callback',
-                    copy: 'Insert the raw provider event first. A unique provider/event ID makes the second delivery a harmless conflict that can still receive HTTP 200.',
+                    copy: 'Insert the provider webhook receipt first. A unique provider/event ID makes the second delivery a harmless conflict that can still receive HTTP 200.',
                     points: ['Acknowledge duplicates instead of retrying them.', 'Lock shipment state before transition.', 'Do not use tracking number alone as event identity.']
                 }
             };
