@@ -13,6 +13,7 @@ Provider calls never run inside an inventory-locking transaction. Jobs and comma
 Scope:
 
 - Implement `ShipmentSubmissionService::prepare()` to lock an eligible packed shipment.
+- Reuse the Phase 1 shipping DTOs at the provider boundary; add a new readonly preparation result only if the service needs to carry local attempt identity alongside the provider request.
 - Create or reuse a provider attempt with a stable provider request key.
 - Persist the submission-ready state before any provider call.
 - Reject ineligible, duplicate, or terminal shipment submissions.
@@ -41,7 +42,7 @@ Scope:
 - Persist immediate, delayed, timeout-followed-by-success, delivery, and out-of-order event intents as mock-provider outbound events.
 - Model exact duplicate delivery as another delivery attempt of the same event ID and immutable raw body, not a second business event.
 - For timeout-after-acceptance, commit the external shipment and future callback before simulating the lost response.
-- Add one focused deterministic dataset for stable identity, outcome mapping, status lookup, and timeout-after-acceptance.
+- Add one focused deterministic dataset under the concrete Shipping test area for stable identity, outcome mapping, status lookup, and timeout-after-acceptance.
 
 Done when:
 
@@ -58,6 +59,7 @@ Scope:
 
 - Implement shared HMAC signing/verification over timestamp and raw body.
 - Add `POST /webhooks/shipping-provider`.
+- Convert validated callback input into a readonly shipping DTO before passing it to the provider-event service; do not pass the raw request or an untyped array into business orchestration.
 - Validate provider, event ID, timestamp replay window, signature, JSON structure, quantities, and supported event type.
 - Persist the received provider event before dispatching processing.
 - Acknowledge duplicates using the unique provider/external-event key.
@@ -102,6 +104,7 @@ Scope:
 
 - Implement `ShipmentSubmissionService::submit()` as the coordinator around preparation, provider call, and outcome recording.
 - Depend on `ShippingProvider`, not the persistent mock implementation.
+- Consume the existing provider request/result DTOs and keep submission outcome separate from callback-delivery intent.
 - Make the provider call outside database transactions.
 - Record accepted, permanent failure, and timeout/uncertain results through short follow-up transactions owned by the service.
 - Never interpret provider acceptance as shipment confirmation.
@@ -163,6 +166,7 @@ Done when:
 Scope:
 
 - Implement shipment confirmation through `ShipmentService::confirmHandoff()`.
+- Extend the operation-type enum with shipment confirmation here, where the persisted provider event and shipment service consume it.
 - Lock shipment, reservation, shipment-item, and balance records in deterministic order.
 - Move packed stock to external/shipped exactly once.
 - Update shipment, reservation, order item, operation, movement, history, and received event in one transaction.
@@ -182,9 +186,11 @@ Done when:
 Scope:
 
 - Implement delivery confirmation through `ShipmentService::confirmDelivery()`.
+- Extend the operation-type enum with delivery confirmation here; the persisted provider event supplies the stable identity for the central operation record.
 - Apply partial and complete delivery progress only to shipped quantities.
 - Do not modify warehouse balance projections.
 - Recalculate progress through the shared calculator.
+- Keep delivery progress separate from local shipment submission and provider-attempt statuses; do not duplicate delivery labels inside those enums.
 - Handle delayed and exact duplicate delivery confirmation.
 - Add one focused delivery-progress and duplicate scenario.
 

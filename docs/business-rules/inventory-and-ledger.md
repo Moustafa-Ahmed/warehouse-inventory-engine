@@ -29,6 +29,8 @@ on_hand_quantity =
 
 Shipped and delivered quantities are not warehouse balance buckets because those goods are no longer physically held by the warehouse. They remain queryable through movements, reservations, order items, shipment items, and delivery events.
 
+The movement ledger may classify an external destination as `shipped` while its warehouse reference is null. That movement-endpoint classification is distinct from the four warehouse balance buckets and must not be used as a mutable on-hand projection.
+
 ## 2. Balance Invariants
 
 For every product and warehouse:

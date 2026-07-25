@@ -86,13 +86,15 @@ Manual evidence must not replace the critical concurrency, idempotency, rollback
 
 ```text
 tests/
-├── Unit/                 # Only important pure domain logic
+├── Unit/                 # Important pure calculations or mappings, grouped by business area
 └── Feature/
     ├── Smoke/            # Application wiring, pages, commands, representative flow
-    └── Critical/         # MySQL domain, job, webhook, rollback, and concurrency risks
+    └── Critical/         # MySQL service, job, webhook, rollback, and concurrency risks
 ```
 
-The exact filenames may follow the implemented class names, but the distinction between smoke and critical risk tests must remain clear.
+Do not create a generic `Unit/Domain` catch-all. When unit tests are justified, group them by the concrete area such as `Unit/Orders` or `Unit/Shipping`. Critical integration tests may likewise use concrete areas such as `Critical/Inventory`, `Critical/Reservations`, and `Critical/Shipping`.
+
+The exact filenames may follow the implemented class names, but the distinction between unit, smoke, and critical risk tests must remain clear. Simple DTOs, enum declarations, and data containers do not receive standalone tests.
 
 ## Database and Queue Rules
 

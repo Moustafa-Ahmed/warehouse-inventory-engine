@@ -11,6 +11,8 @@ Implement physical progression from confirmed reservation through packed shipmen
 Scope:
 
 - Implement partial and full picking through `FulfillmentService::pick()`.
+- Add the readonly pick DTO required by the service under `app/DTOs/Fulfillment` and extend the operation-type enum with the pick case.
+- Require an idempotency key and execute picking through `OperationService`.
 - Allow only confirmed, open reservations.
 - Move reserved to picked through the movement applicator.
 - Recalculate reservation and order-item progress through the shared calculator.
@@ -29,6 +31,8 @@ Done when:
 Scope:
 
 - Implement explicit picked-to-available return through `FulfillmentService::returnPicked()`.
+- Add the readonly return DTO required by the service and extend the operation-type enum with the return case.
+- Require an idempotency key and execute the return through `OperationService`.
 - Require administrator actor and reason.
 - Restore order-item outstanding demand unless separately cancelled.
 - Append compensating movement and history.
@@ -47,6 +51,8 @@ Done when:
 Scope:
 
 - Implement partial and full packing.
+- Add the readonly pack DTO required by the service and extend the operation-type enum with the pack case.
+- Require an idempotency key and execute packing through `OperationService`.
 - Move picked quantity to packed through the movement applicator.
 - Recalculate progress through the shared calculator.
 - Record the transition and operation atomically.
@@ -64,6 +70,8 @@ Done when:
 Scope:
 
 - Implement packed-to-picked unpacking.
+- Add the readonly unpack DTO required by the service and extend the operation-type enum with the unpack case.
+- Execute unpacking through `OperationService` using the required operation key.
 - Reject quantity assigned to an active or confirmed shipment.
 - Require an explicit reason and operation key.
 - Recalculate progress and append history through shared services.
@@ -81,6 +89,8 @@ Done when:
 Scope:
 
 - Implement shipment creation from eligible packed reservation quantities.
+- Add readonly shipment-composition input/result DTOs under `app/DTOs/Shipping` and extend the operation-type enum with the create-shipment case.
+- Require an idempotency key and execute shipment creation through `OperationService`.
 - Require one warehouse per shipment.
 - Support multiple items and partial item quantities.
 - Assign packed quantities to shipment items without deducting warehouse stock.

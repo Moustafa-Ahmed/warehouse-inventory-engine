@@ -15,7 +15,7 @@ Scope:
 - Ensure primary pages, required commands, migration/seeding, and one representative form flow are in the smoke suite.
 - Assert movements, transitions, operations, and projections in critical tests—not only return values or HTTP responses.
 - Use small datasets only where important state or provider outcomes share setup.
-- Do not add tests merely to cover every class, branch, validation rule, or acceptance scenario.
+- Do not add tests merely to cover every DTO, enum, class, branch, validation rule, or acceptance scenario.
 
 Done when:
 
@@ -65,7 +65,7 @@ Done when:
 Scope:
 
 - Create `docs/ARCHITECTURE.md` against the implemented code.
-- Describe domain model, schema, lifecycle, movements, projections, locking, idempotency, progress calculation, application services, jobs, persistent mock-provider boundary, outbound HTTP delivery, inbound event processing, reconciliation, security, scaling, and trade-offs.
+- Describe domain model, schema, lifecycle, movements, projections, locking, idempotency, progress calculation, application services, readonly DTO boundaries, jobs, persistent mock-provider boundary, outbound HTTP delivery, inbound event processing, reconciliation, security, scaling, and trade-offs.
 - Explain the design patterns and SOLID principles actually used.
 - Link the business rules, ERD, and implementation evidence.
 - Update diagrams to match implemented behavior.

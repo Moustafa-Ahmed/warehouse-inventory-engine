@@ -13,8 +13,10 @@ Scope:
 - Implement one pure order-item quantity/progress calculator.
 - Calculate ordered, cancelled, outstanding, reserved, picked, packed, shipped, and delivered relationships.
 - Keep allocation, fulfillment, and delivery as separate dimensions.
+- Before adding categorical labels or enums, record and obtain owner approval for the zero-demand, fully cancelled, and not-yet-shipped meanings. If persisted labels do not protect a demonstrated query or invariant, keep them derived from quantities.
+- Return the calculated quantities and any approved labels through a native `final readonly` DTO under `app/DTOs/Orders`.
 - Enforce the quantity-conservation equation.
-- Add a small table-driven unit test for the important empty, partial, and terminal combinations.
+- Add a small table-driven test under `tests/Unit/Orders` for the important empty, partial, and terminal combinations.
 
 Done when:
 
@@ -29,6 +31,8 @@ Done when:
 Scope:
 
 - Implement order and order-item creation through `OrderService`.
+- Add only the readonly order input/result DTOs needed by this service and extend the operation-type enum with the create-order case.
+- Require an idempotency key and execute order creation through `OperationService`.
 - Validate positive ordered quantities and product eligibility.
 - Initialize projections through the shared progress calculator.
 - Add factories for open, partial, and terminal order demand.
@@ -46,6 +50,9 @@ Done when:
 Scope:
 
 - Implement warehouse-scoped reservation through `ReservationService::reserve()`.
+- Add readonly reservation input/result DTOs under `app/DTOs/Reservations`; the result explicitly carries requested, allocated, outstanding, and fully-allocated values.
+- Extend the operation-type enum with the reservation case.
+- Require an idempotency key and execute reservation through `OperationService`.
 - Lock the selected balance before calculating availability.
 - Allocate `min(available, outstanding)` quantity.
 - Return requested, allocated, outstanding, and fully-allocated indicators.
@@ -67,6 +74,9 @@ Done when:
 Scope:
 
 - Implement partial and full reservation release.
+- Add the readonly release/cancellation DTO needed by the service and extend the operation-type enum with the release case.
+- Introduce a specific eligibility exception only if this service needs one; do not add a generic catch-all exception for future transitions.
+- Execute release or cancellation through `OperationService`.
 - Move only reserved quantity back to available.
 - Distinguish release-with-outstanding-demand from release-with-cancellation.
 - Require a reason and operation key.
@@ -86,6 +96,8 @@ Done when:
 Scope:
 
 - Implement delta-based quantity edits.
+- Add the readonly order-edit DTO needed by `OrderService` and extend the operation-type enum with the edit case.
+- Require an idempotency key and execute the edit through `OperationService`.
 - Treat an increase as new outstanding demand.
 - Use the existing `ReservationService` release/cancellation method for an eligible decrease.
 - Prevent reductions below shipped and cancelled quantity.
@@ -144,6 +156,9 @@ Scope:
 
 - Implement temporary reservation confirmation.
 - Implement expiration for eligible expired holds through `ReservationService::expire()`.
+- Extend the operation-type enum with confirmation and expiration only in this commit.
+- Introduce transition-specific exceptions here if the service needs them. Do not create a context-free reservation state object that can transition without locked quantities and expiration data.
+- Execute confirmation and expiration through `OperationService`; scheduled expiration uses deterministic per-reservation operation keys so repeated sweeps remain safe.
 - Add `reservations:expire` command that processes bounded batches.
 - Release stock through the existing `ReservationService` method.
 - Make command execution idempotent and safe under overlap.

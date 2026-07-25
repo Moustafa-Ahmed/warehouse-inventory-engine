@@ -29,7 +29,7 @@ This directory is the navigation hub for the challenge documentation. The busine
 | --- | --- |
 | [Roadmap](implementation-plan/README.md) | Phase order, delivery gates, and commit rules |
 | [Testing Strategy](implementation-plan/testing-strategy.md) | Risk-based smoke, critical integration, concurrency, and focused unit coverage |
-| [Phase 1 — Foundation and Schema](implementation-plan/phase-01-foundation-and-schema.md) | MySQL test harness, service conventions, early provider boundary, schema, factories, and reference data |
+| [Phase 1 — Foundation and Schema](implementation-plan/phase-01-foundation-and-schema.md) | MySQL test harness, service/DTO conventions, early provider boundary, consumer-owned schema types, factories, and reference data |
 | [Phase 2 — Inventory Ledger](implementation-plan/phase-02-inventory-ledger.md) | Idempotent operations, movements, projections, receipts, adjustments, and transfers |
 | [Phase 3 — Orders and Reservations](implementation-plan/phase-03-orders-and-reservations.md) | Progress calculation, orders, partial reservation, release, edits, expiration, and backorders |
 | [Phase 4 — Fulfillment](implementation-plan/phase-04-fulfillment.md) | Pick, return, pack, unpack, partial shipment preparation, and conservation |

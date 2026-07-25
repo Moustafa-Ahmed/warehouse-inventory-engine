@@ -56,6 +56,7 @@ This register records the decisions made during the design workshop. “Accepted
 | D33 | Accepted | An exact duplicate callback reuses the same external event ID and raw body. Repeated HTTP attempts and application processing must remain harmless. |
 | D34 | Accepted | Use a Laravel application-service layer under domain-oriented `app/Services` namespaces. Controllers, commands, jobs, and webhooks use constructor injection and call focused service methods. Services own use-case orchestration and transaction boundaries, depend on interfaces at external boundaries, and must not become generic base classes or oversized catch-all services. |
 | D35 | Accepted sequencing choice | Create and finalize the root README, `docs/ARCHITECTURE.md`, `docs/AI_USAGE.md`, and video outline after the working demo is complete in Phase 6. Their required content remains submission-critical in Phase 7; the decision register preserves interim ownership and trade-off notes until then. |
+| D36 | Accepted | Use native PHP `final readonly` DTOs under business-area `app/DTOs` namespaces for typed application-service inputs and results when an array would be ambiguous. Introduce each DTO with its first consuming service or external contract. Simple DTOs do not receive standalone tests. Do not add a DTO package unless its hydration, transformation, or serialization features become necessary and the dependency is explicitly approved. |
 
 ## Deferred Review Points
 
@@ -66,6 +67,7 @@ These items are intentionally unresolved:
 3. Which exact scenarios fit the final 15–20 minute video.
 4. Whether presentation-focused UI additions are worthwhile after all correctness tests pass.
 5. Whether a general versioned JSON API is worthwhile after every required deliverable passes.
+6. Whether allocation, fulfillment, and delivery labels need persisted status projections or should remain derived from quantity projections; exact zero, fully cancelled, and not-yet-shipped meanings must be approved before progress statuses are implemented.
 
 ## Decision Ownership
 

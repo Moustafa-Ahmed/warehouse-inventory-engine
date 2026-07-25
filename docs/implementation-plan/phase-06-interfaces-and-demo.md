@@ -33,6 +33,7 @@ Scope:
 
 - Use named web routes, implicit route binding where appropriate, and thin controllers.
 - Add Form Requests for validation and authorization.
+- Map validated mutation input into the consuming service's readonly DTO rather than passing the HTTP request or an untyped array into the application-service layer.
 - Generate and carry an operation key in every authenticated business-mutation form.
 - Map application results and domain failures to clear Blade messages.
 - Use post/redirect/get after mutations.
@@ -87,7 +88,7 @@ Done when:
 Scope:
 
 - Add focused order list/create/detail/edit screens.
-- Show separate allocation, fulfillment, and delivery progress.
+- Show separate allocation, fulfillment, and delivery quantities and only the categorical labels approved during P3.1.
 - Add reservation detail and transition timeline.
 - Add valid reserve, confirm, release, and allocate-now forms.
 - Display requested, allocated, and outstanding quantities after every allocation attempt.

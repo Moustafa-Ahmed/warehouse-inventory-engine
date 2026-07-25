@@ -10,7 +10,7 @@ Correctness is built from the database outward while external boundaries are de-
 
 ```text
 Project/test foundation
-    -> service conventions + domain vocabulary + provider contract/deterministic fake
+    -> service/DTO conventions + provider contract/deterministic fake
     -> schema, persistent mock-provider state, and reference data
     -> canonical movements and balance projections
     -> orders, progress, reservations, release, and backorders
@@ -38,7 +38,7 @@ Supporting tasks encountered before Phase 5 may be parked while the submission-c
 
 | Phase | Outcome | Priority |
 | --- | --- | --- |
-| [1. Foundation and Schema](phase-01-foundation-and-schema.md) | MySQL test harness, service conventions, early provider boundary, warehouse/mock-provider schema, factories, and reference seed data | Submission-critical |
+| [1. Foundation and Schema](phase-01-foundation-and-schema.md) | MySQL test harness, service/DTO conventions, early provider boundary, warehouse/mock-provider schema, factories, and reference seed data | Submission-critical |
 | [2. Inventory Ledger](phase-02-inventory-ledger.md) | Idempotent receipts, adjustments, transfers, movements, projections, and concurrency proof | Submission-critical |
 | [3. Orders and Reservations](phase-03-orders-and-reservations.md) | Shared progress calculation, partial allocation, release, edits, expiration, and backorder recovery | Submission-critical |
 | [4. Fulfillment](phase-04-fulfillment.md) | Pick, return, pack, unpack, shipment preparation, and conservation | Submission-critical |
@@ -62,6 +62,8 @@ Each numbered task is intended to become one independently reviewable commit.
 10. Update the business rules and decision register with any approved rule change.
 11. Preserve implementation decisions and ownership notes in the decision register; after the Phase 6 demo, Phase 7 creates and finalizes `README.md`, `docs/ARCHITECTURE.md`, `docs/AI_USAGE.md`, and the video outline from the implemented system.
 12. Avoid WIP commits on the submission branch.
+13. Introduce each DTO, enum, exception, calculator, value object, or state machine with its first real consumer and only after its semantics are defined.
+14. Use native `final readonly` DTOs under `app/DTOs/{Area}` when typed service inputs or results would otherwise be ambiguous arrays; do not add standalone tests for simple DTOs.
 
 ## Definition of a Completed Commit
 

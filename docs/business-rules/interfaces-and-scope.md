@@ -28,15 +28,29 @@ app/Services/
 └── Shipping/
 ```
 
+Typed service inputs and results that would otherwise be ambiguous arrays use native PHP `final readonly` DTOs grouped by the same business areas:
+
+```text
+app/DTOs/
+├── Inventory/
+├── Orders/
+├── Reservations/
+├── Fulfillment/
+└── Shipping/
+```
+
 Rules:
 
 - Group cohesive operations in focused services such as `InventoryService`, `ReservationService`, `FulfillmentService`, `ShipmentService`, `ShipmentSubmissionService`, and `ProviderEventService`.
 - Use descriptive typed methods such as `reserve()`, `release()`, `pick()`, `submit()`, and `confirmShipment()` rather than a generic `execute()` API.
+- Introduce a DTO with its first consuming service or external contract; do not create speculative request/result classes for later phases.
+- Keep DTOs as typed data carriers. Business orchestration, locking, idempotency, and state transitions remain in application services.
+- Use native PHP readonly DTOs unless an explicitly approved package solves a demonstrated hydration, transformation, or serialization need.
 - Inject services through constructors; do not resolve them with `app()` inside controllers, commands, or jobs.
 - Services own business orchestration, pessimistic locking, and transaction boundaries.
 - Keep slow provider HTTP work outside inventory transactions even when one service coordinates the overall use case.
 - Depend on contracts for shipping providers and other external boundaries.
-- Reuse small calculators, value objects, and narrowly focused supporting services where they protect an invariant or remove meaningful duplication.
+- Introduce calculators, enums, value objects, exceptions, and state machines only with their first real consumer and after their semantics are defined.
 - Do not create `BaseService`, generic CRUD services, or repository wrappers around Eloquent without a demonstrated need.
 - Split a service when it mixes unrelated domain concerns or becomes difficult to test and explain.
 

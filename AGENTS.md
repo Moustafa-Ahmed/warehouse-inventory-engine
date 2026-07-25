@@ -25,6 +25,7 @@ If documents conflict, do not guess. Identify the conflict and ask the owner bef
 - Keep controllers, Form Requests, commands, jobs, scheduler callbacks, and webhooks thin.
 - Application services own business orchestration, transaction boundaries, locking, and idempotency.
 - Use constructor injection and contracts at external boundaries.
+- Use native PHP `final readonly` DTOs under business-area `app/DTOs` namespaces as recorded in D36. Introduce each DTO with its first consumer, keep business logic out of DTOs, and do not add standalone tests for simple data carriers.
 - Do not create generic base services, unnecessary repository wrappers, or speculative abstractions.
 - Introduce enums, value objects, exceptions, and state machines with their first real consumer, after their semantics are defined.
 - A general JSON API is not required. The operational UI is server-rendered Blade; the provider webhook is the required machine-to-machine boundary.
