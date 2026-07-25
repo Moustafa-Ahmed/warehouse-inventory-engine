@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('operation_type')->index();
             $table->string('idempotency_key')->unique();
             $table->char('request_hash', 64);
-            $table->string('status')->default('pending')->index();
+            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending')->index();
             $table->string('result_reference')->nullable();
             $table->json('result_payload')->nullable();
             $table->json('failure_context')->nullable();

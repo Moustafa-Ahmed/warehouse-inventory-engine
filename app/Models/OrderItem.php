@@ -12,12 +12,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'order_id',
     'product_id',
     'ordered_quantity',
-    'cancelled_quantity',
-    'reserved_quantity',
-    'picked_quantity',
-    'packed_quantity',
-    'shipped_quantity',
-    'delivered_quantity',
 ])]
 class OrderItem extends Model
 {

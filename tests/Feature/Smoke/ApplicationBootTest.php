@@ -16,6 +16,8 @@ it('boots against the isolated MySQL test database', function () {
         ->and(Schema::hasTable('inventory_movements'))->toBeTrue()
         ->and(Schema::hasTable('orders'))->toBeTrue()
         ->and(Schema::hasTable('order_items'))->toBeTrue()
+        ->and(Schema::hasTable('reservations'))->toBeTrue()
+        ->and(Schema::hasTable('reservation_transitions'))->toBeTrue()
         ->and($this->app->make(ShippingProvider::class))->toBeInstanceOf(InMemoryProvider::class);
 
     $this->get('/')->assertSuccessful();

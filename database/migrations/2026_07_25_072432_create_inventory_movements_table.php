@@ -17,9 +17,9 @@ return new class extends Migration
             $table->foreignId('operation_id')->constrained()->restrictOnDelete();
             $table->foreignId('product_id')->constrained()->restrictOnDelete();
             $table->foreignId('source_warehouse_id')->nullable()->constrained('warehouses')->restrictOnDelete();
-            $table->string('source_bucket')->nullable();
+            $table->enum('source_bucket', ['available', 'reserved', 'picked', 'packed', 'shipped'])->nullable();
             $table->foreignId('destination_warehouse_id')->nullable()->constrained('warehouses')->restrictOnDelete();
-            $table->string('destination_bucket')->nullable();
+            $table->enum('destination_bucket', ['available', 'reserved', 'picked', 'packed', 'shipped'])->nullable();
             $table->unsignedInteger('quantity');
             $table->string('business_reference_type');
             $table->string('business_reference_id');
