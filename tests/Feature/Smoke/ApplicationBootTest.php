@@ -9,6 +9,8 @@ it('boots against the isolated MySQL test database', function () {
     expect(config('database.default'))->toBe('mysql')
         ->and(DB::connection()->getDriverName())->toBe('mysql')
         ->and(Schema::hasTable('users'))->toBeTrue()
+        ->and(Schema::hasTable('products'))->toBeTrue()
+        ->and(Schema::hasTable('warehouses'))->toBeTrue()
         ->and($this->app->make(ShippingProvider::class))->toBeInstanceOf(InMemoryProvider::class);
 
     $this->get('/')->assertSuccessful();
