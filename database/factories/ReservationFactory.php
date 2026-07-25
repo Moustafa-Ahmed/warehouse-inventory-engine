@@ -31,18 +31,56 @@ class ReservationFactory extends Factory
         return $this->state(fn () => ['kind' => Kind::Temporary, 'expires_at' => now()->addHour()]);
     }
 
-    public function released(): static
+    public function packed(int $quantity = 1): static
     {
-        return $this->state(fn () => ['status' => Status::Released, 'reserved_quantity' => 0, 'released_quantity' => 1]);
+        return $this->state(fn () => [
+            'requested_quantity' => $quantity,
+            'reserved_quantity' => 0,
+            'picked_quantity' => 0,
+            'packed_quantity' => $quantity,
+            'shipped_quantity' => 0,
+            'released_quantity' => 0,
+        ]);
     }
 
-    public function expired(): static
+    public function released(int $quantity = 1): static
     {
-        return $this->state(fn () => ['kind' => Kind::Temporary, 'status' => Status::Expired, 'reserved_quantity' => 0, 'released_quantity' => 1, 'expires_at' => now()->subMinute()]);
+        return $this->state(fn () => [
+            'status' => Status::Released,
+            'requested_quantity' => $quantity,
+            'reserved_quantity' => 0,
+            'picked_quantity' => 0,
+            'packed_quantity' => 0,
+            'shipped_quantity' => 0,
+            'released_quantity' => $quantity,
+        ]);
     }
 
-    public function closed(): static
+    public function expired(int $quantity = 1): static
     {
-        return $this->state(fn () => ['status' => Status::Closed, 'reserved_quantity' => 0, 'shipped_quantity' => 1]);
+        return $this->state(fn () => [
+            'kind' => Kind::Temporary,
+            'status' => Status::Expired,
+            'requested_quantity' => $quantity,
+            'reserved_quantity' => 0,
+            'picked_quantity' => 0,
+            'packed_quantity' => 0,
+            'shipped_quantity' => 0,
+            'released_quantity' => $quantity,
+            'expires_at' => now()->subMinute(),
+        ]);
+    }
+
+    public function closed(int $quantity = 1): static
+    {
+        return $this->state(fn () => [
+            'status' => Status::Closed,
+            'requested_quantity' => $quantity,
+            'reserved_quantity' => 0,
+            'picked_quantity' => 0,
+            'packed_quantity' => 0,
+            'shipped_quantity' => $quantity,
+            'released_quantity' => 0,
+        ]);
     }
 }

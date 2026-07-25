@@ -6,6 +6,7 @@ use Database\Factories\WarehouseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['code', 'name', 'is_active'])]
 class Warehouse extends Model
@@ -26,5 +27,10 @@ class Warehouse extends Model
         return [
             'is_active' => 'boolean',
         ];
+    }
+
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
     }
 }

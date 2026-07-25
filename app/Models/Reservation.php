@@ -38,4 +38,9 @@ class Reservation extends Model
     {
         return $this->hasMany(ReservationTransition::class);
     }
+
+    public function shipmentItems(): HasMany
+    {
+        return $this->hasMany(ShipmentItem::class);
+    }
 }
