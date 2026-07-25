@@ -29,11 +29,11 @@ This directory is the navigation hub for the challenge documentation. The busine
 | --- | --- |
 | [Roadmap](implementation-plan/README.md) | Phase order, delivery gates, and commit rules |
 | [Testing Strategy](implementation-plan/testing-strategy.md) | Risk-based smoke, critical integration, concurrency, and focused unit coverage |
-| [Phase 1 — Foundation and Schema](implementation-plan/phase-01-foundation-and-schema.md) | Living submission docs, MySQL test harness, early provider boundary, schema, factories, and reference data |
+| [Phase 1 — Foundation and Schema](implementation-plan/phase-01-foundation-and-schema.md) | MySQL test harness, service conventions, early provider boundary, schema, factories, and reference data |
 | [Phase 2 — Inventory Ledger](implementation-plan/phase-02-inventory-ledger.md) | Idempotent operations, movements, projections, receipts, adjustments, and transfers |
 | [Phase 3 — Orders and Reservations](implementation-plan/phase-03-orders-and-reservations.md) | Progress calculation, orders, partial reservation, release, edits, expiration, and backorders |
 | [Phase 4 — Fulfillment](implementation-plan/phase-04-fulfillment.md) | Pick, return, pack, unpack, partial shipment preparation, and conservation |
-| [Phase 5 — Shipping Reliability](implementation-plan/phase-05-shipping-reliability.md) | Provider actions, thin jobs/commands, timeouts, signed callbacks, mock behavior, and scheduling |
+| [Phase 5 — Shipping Reliability](implementation-plan/phase-05-shipping-reliability.md) | Provider services, thin jobs/commands, timeouts, signed callbacks, mock behavior, and scheduling |
 | [Phase 6 — Interfaces and Demonstration](implementation-plan/phase-06-interfaces-and-demo.md) | Minimal Blade workflows, operational query services, reports, scenario data, and demo controls |
 | [Phase 7 — Hardening and Submission](implementation-plan/phase-07-hardening-and-submission.md) | Risk evidence, finalized docs, clean verification, video, and repository handoff |
 
@@ -45,7 +45,7 @@ This directory is the navigation hub for the challenge documentation. The busine
 
 ## Required Submission Documents
 
-The root `README.md`, `docs/ARCHITECTURE.md`, and `docs/AI_USAGE.md` are created as living drafts in Phase 1, updated with the implementation, and finalized during Phase 7.
+The root `README.md`, `docs/ARCHITECTURE.md`, `docs/AI_USAGE.md`, and the video outline are intentionally created after the Phase 6 demo is working, then completed and verified during Phase 7.
 
 Phase 7 also adds:
 

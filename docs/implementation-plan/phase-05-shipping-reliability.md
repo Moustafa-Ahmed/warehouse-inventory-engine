@@ -4,7 +4,7 @@
 
 Turn the Phase 1 provider boundary and schema into a persistent mock external system, then integrate it with shipment attempts, actual signed HTTP callbacks, explicit timeout reconciliation, duplicate safety, and scheduled recovery.
 
-Provider calls never run inside an inventory-locking transaction. Jobs and commands locate work and invoke application actions; they do not contain shipment or inventory rules. A provider response may change submission state, but only a valid persisted callback may move packed inventory to shipped.
+Provider calls never run inside an inventory-locking transaction. Jobs and commands locate work and invoke application services; they do not contain shipment or inventory rules. A provider response may change submission state, but only a valid persisted callback may move packed inventory to shipped.
 
 ## Commit P5.1 — `feat: prepare idempotent shipment submission attempts`
 
@@ -12,7 +12,7 @@ Provider calls never run inside an inventory-locking transaction. Jobs and comma
 
 Scope:
 
-- Implement an action that locks an eligible packed shipment.
+- Implement `ShipmentSubmissionService::prepare()` to lock an eligible packed shipment.
 - Create or reuse a provider attempt with a stable provider request key.
 - Persist the submission-ready state before any provider call.
 - Reject ineligible, duplicate, or terminal shipment submissions.
@@ -100,10 +100,10 @@ Done when:
 
 Scope:
 
-- Implement `SubmitShipmentAction` as the coordinator around preparation, provider call, and outcome recording.
+- Implement `ShipmentSubmissionService::submit()` as the coordinator around preparation, provider call, and outcome recording.
 - Depend on `ShippingProvider`, not the persistent mock implementation.
 - Make the provider call outside database transactions.
-- Record accepted, permanent failure, and timeout/uncertain results through short follow-up transactions.
+- Record accepted, permanent failure, and timeout/uncertain results through short follow-up transactions owned by the service.
 - Never interpret provider acceptance as shipment confirmation.
 - Ensure immediate success means an immediately due outbound callback, not direct inventory deduction.
 - Use explicit connection and request timeouts at provider adapter boundaries.
@@ -122,7 +122,7 @@ Done when:
 
 Scope:
 
-- Implement `SubmitShipmentJob` as a thin adapter over `SubmitShipmentAction`.
+- Implement `SubmitShipmentJob` as a thin adapter over `ShipmentSubmissionService`.
 - Implement `shipments:process-pending` to select bounded eligible batches and dispatch jobs.
 - Set explicit job timeout, tries, and bounded exponential backoff.
 - Ensure queue `retry_after` is greater than the job timeout.
@@ -142,7 +142,7 @@ Done when:
 
 Scope:
 
-- Implement `ReconcileShipmentSubmissionAction` using provider status lookup and the stable request key.
+- Implement `ShipmentSubmissionService::reconcile()` using provider status lookup and the stable request key.
 - Implement bounded `shipments:reconcile-uncertain` discovery and thin reconciliation jobs.
 - Keep packed and on-hand quantities unchanged while the local outcome is uncertain.
 - Record provider acceptance or rejection without treating status lookup as shipment confirmation.
@@ -162,18 +162,18 @@ Done when:
 
 Scope:
 
-- Implement `ApplyShipmentConfirmationAction`.
+- Implement shipment confirmation through `ShipmentService::confirmHandoff()`.
 - Lock shipment, reservation, shipment-item, and balance records in deterministic order.
 - Move packed stock to external/shipped exactly once.
 - Update shipment, reservation, order item, operation, movement, history, and received event in one transaction.
-- Implement `ProcessProviderEventJob` as a thin adapter over event actions.
+- Implement `ProviderEventService` to classify and route persisted events, with `ProcessProviderEventJob` as its thin queued adapter.
 - Add critical duplicate-confirmation, rollback, and worker-retry scenarios.
 
 Done when:
 
 - Repeating shipment confirmation cannot deduct packed stock twice.
 - A crash cannot persist a partially confirmed shipment.
-- The job contains no duplicate state-transition implementation.
+- The job contains no duplicate state-transition implementation and delegates to the service layer.
 
 ## Commit P5.9 — `feat: apply delivery confirmations idempotently`
 
@@ -181,7 +181,7 @@ Done when:
 
 Scope:
 
-- Implement `ApplyDeliveryConfirmationAction`.
+- Implement delivery confirmation through `ShipmentService::confirmDelivery()`.
 - Apply partial and complete delivery progress only to shipped quantities.
 - Do not modify warehouse balance projections.
 - Recalculate progress through the shared calculator.
@@ -204,7 +204,7 @@ Scope:
 - Mark stale events ignored without error.
 - Keep future events pending.
 - Implement `provider-events:process-pending` as a bounded recovery command.
-- Route valid events to the already implemented shipment-confirmation or delivery action.
+- Route valid events through `ProviderEventService` to the already implemented `ShipmentService` methods.
 - Add one out-of-order scenario proving an event waits and later processes once.
 
 Done when:
@@ -218,13 +218,13 @@ Done when:
 
 Scope:
 
-- Implement local/testing-only application actions to set a shipment's next forced provider scenario.
+- Implement `MockProviderControlService` with local/testing-only methods to set a shipment's next forced provider scenario.
 - Implement controls to create or release shipment-confirmed and delivery-confirmed outbound events.
 - Implement exact replay using the original external event ID and raw body.
 - Implement the deliberate out-of-order delivery control.
 - Add guarded `mock-provider:send-event` and `mock-provider:replay-event` commands.
 - Reject controls outside local/testing environments and for non-mock provider adapters.
-- Ensure controls mutate only mock-provider state or dispatch callback delivery; they never invoke warehouse shipment or inventory actions directly.
+- Ensure controls mutate only mock-provider state or dispatch callback delivery; they never invoke warehouse shipment or inventory services directly.
 - Add a focused authorization/environment test and a small control-mapping dataset.
 
 Done when:
@@ -259,7 +259,7 @@ Done when:
 
 ## Phase Gate
 
-- [ ] Submission action uses the early provider contract and persistent deterministic mock provider
+- [ ] Shipment submission service uses the early provider contract and persistent deterministic mock provider
 - [ ] Mock external shipments and outbound events persist independently from local attempts and the inbox
 - [ ] Provider calls occur outside database transactions and inventory locks
 - [ ] Pending-shipment command and job are thin, bounded, and repeat-safe
@@ -275,5 +275,4 @@ Done when:
 - [ ] Every challenge-required mock-provider mode is deterministic and random mode remains available
 - [ ] Demo controls are unavailable outside local/testing environments
 - [ ] Scheduler exposes every persisted recovery path
-- [ ] README, architecture, AI-usage, and video-outline documents are current
 - [ ] Smoke, focused provider datasets, critical shipping tests, and Pint pass

@@ -10,7 +10,7 @@ Implement the canonical movement ledger and synchronously locked balance project
 
 Scope:
 
-- Implement an operation coordinator that claims an idempotency key inside the caller’s transaction.
+- Implement `OperationService` to claim an idempotency key inside the caller service’s transaction.
 - Canonically hash the operation type and validated request.
 - Return the original completed result for a repeated identical request.
 - Reject the same key with a different payload.
@@ -29,7 +29,7 @@ Done when:
 
 Scope:
 
-- Implement one movement applicator for all bucket/location changes.
+- Implement `InventoryMovementService` as the one movement applicator for all bucket/location changes.
 - Resolve and lock every affected balance in ascending ID order.
 - Validate source quantity after locking.
 - Append movement and update projections in one transaction.
@@ -48,7 +48,7 @@ Done when:
 
 Scope:
 
-- Implement the receive-stock command object, result, and action.
+- Implement receive-stock command/result objects and `InventoryService::receive()`.
 - Move external quantity into warehouse available stock.
 - Require product, warehouse, positive quantity, source reference, and idempotency key.
 - Persist administrator actor when present.
@@ -67,7 +67,7 @@ Done when:
 
 Scope:
 
-- Implement positive and negative adjustment actions.
+- Implement positive and negative adjustments through `InventoryService::adjust()`.
 - Require an explicit reason and actor.
 - Reject negative adjustments exceeding available quantity.
 - Record compensating movements rather than editing history.
@@ -84,7 +84,7 @@ Done when:
 
 Scope:
 
-- Implement available-stock transfers.
+- Implement available-stock transfers through `InventoryService::transfer()`.
 - Reject identical source/destination warehouses.
 - Lock source and destination balances in deterministic order.
 - Move only source available quantity.
@@ -116,10 +116,9 @@ Done when:
 ## Phase Gate
 
 - [ ] Balances are mutated only by the movement applicator.
-- [ ] Receipt and transfer actions are idempotent.
+- [ ] Receipt and transfer service methods are idempotent.
 - [ ] Supporting adjustment work is complete or explicitly recorded for the post-Phase-5 time review.
 - [ ] Multi-row locks use deterministic order.
 - [ ] Concurrency tests run against MySQL.
 - [ ] Rollback tests prove atomic ledger/projection behavior.
-- [ ] README and architecture documents describe the implemented ledger and locking behavior.
 - [ ] Smoke and critical tests plus Pint pass.

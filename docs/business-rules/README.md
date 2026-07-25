@@ -83,7 +83,7 @@ When rules appear to conflict, apply them in this order:
 4. Order and allocation rules.
 5. Interface behavior.
 
-The Blade controllers, commands, jobs, and provider webhook must call shared application actions. An optional future API must use those same actions. No entry point may implement a second version of a business rule.
+The Blade controllers, commands, jobs, and provider webhook must call shared application services. An optional future API must use those same services. No entry point may implement a second version of a business rule.
 
 ## Change Control
 

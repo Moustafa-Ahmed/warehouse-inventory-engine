@@ -19,20 +19,20 @@ They cover:
 - Guest users are redirected from protected operational pages.
 - An authenticated administrator can load the primary inventory, order, reservation, shipment, event, and report pages.
 - Required Artisan commands are registered and can run safely with no eligible work.
-- One representative browser-form workflow reaches the shared application action and redirects with a visible result.
+- One representative browser-form workflow reaches the shared application service and redirects with a visible result.
 - The production frontend build succeeds.
 
 Ordinary catalog CRUD, page rendering, navigation, filters, and presentation behavior rely primarily on this layer rather than dedicated tests for every screen.
 
 ### 2. Critical Feature and Integration Tests
 
-These tests exercise shared application actions against MySQL and assert persisted business effects, not only return values.
+These tests exercise shared application services against MySQL and assert persisted business effects, not only return values.
 
 Important methods and boundaries:
 
 - Central operation/idempotency coordinator.
 - Double-entry movement applicator and balance projection update.
-- Reservation allocation and release actions.
+- Reservation allocation and release service methods.
 - Order-item quantity conservation/progress calculator.
 - Shipment-confirmation inventory deduction.
 - Pending-shipment command and submission job.

@@ -2,7 +2,7 @@
 
 ## Objective
 
-Expose proven application actions through one-administrator authentication, small server-rendered Blade workflows, operational query services, and deterministic demonstration data.
+Expose proven application services through one-administrator authentication, small server-rendered Blade workflows, operational query services, and deterministic demonstration data.
 
 The UI does not depend on a general JSON API or AJAX. JavaScript/jQuery is limited to progressive enhancement. Query services are implemented before reports and the dashboard that consume them.
 
@@ -42,7 +42,7 @@ Scope:
 
 Done when:
 
-- Web controllers only translate input, call an application action, and select a redirect or view.
+- Web controllers only translate input, call an injected application service, and select a redirect or view.
 - Browser refresh cannot silently become a new business operation.
 - Validation, authorization, domain rejection, idempotent replay, and idempotency conflict are distinguishable to the administrator.
 
@@ -73,11 +73,11 @@ Scope:
 - Add receive, adjust, and available-stock transfer forms.
 - Display stored idempotency results after redirect.
 - Keep operation keys stable across duplicate browser submission.
-- Add inventory pages to the smoke suite; rely on critical action tests for inventory correctness.
+- Add inventory pages to the smoke suite; rely on critical service tests for inventory correctness.
 
 Done when:
 
-- An administrator can prepare and modify demo inventory through the same actions used by commands/jobs.
+- An administrator can prepare and modify demo inventory through the same services used by commands/jobs.
 - The UI cannot bypass movement, locking, or idempotency rules.
 
 ## Commit P6.5 — `feat: add order and reservation screens`
@@ -113,7 +113,7 @@ Scope:
 - Add retry controls that reuse the established provider request identity.
 - Add a local-only per-shipment provider-outcome selector.
 - Add local-only forms to send shipment confirmation, send delivery confirmation, replay the last webhook, and send an out-of-order delivery event.
-- Ensure every mock-provider form changes provider state or queues an HTTP callback; none may call shipment or inventory transition actions directly.
+- Ensure every mock-provider form changes provider state or queues an HTTP callback; none may call shipment or inventory transition services directly.
 - Add these pages to the smoke suite.
 - Add one focused assertion that sensitive provider data is not rendered.
 
@@ -150,7 +150,7 @@ Done when:
 
 Scope:
 
-- Build demo scenario data through the implemented application actions, never direct non-zero balance or history inserts.
+- Build demo scenario data through the implemented application services, never direct non-zero balance or history inserts.
 - Seed deterministic provider scenarios that use the controls already exposed on the shipment screen.
 - Add `demo:concurrent-reservation`.
 - Add a local-only `demo:inventory-scenarios` setup/reset command with explicit environment protection.
@@ -171,7 +171,7 @@ Done when:
 Scope:
 
 - Add focused product and warehouse list/create/edit screens.
-- Use small application actions for catalog mutations rather than writing directly from controllers.
+- Use focused catalog services for mutations rather than writing directly from controllers.
 - Protect forms with authentication, authorization, validation, and CSRF.
 - Avoid destructive deletion; use active/inactive state.
 - Add catalog pages to the smoke suite.
@@ -213,16 +213,16 @@ Do not begin these commits until all submission-critical implementation, tests, 
 
 ### Optional Commit P6.O2 — `feat: expose idempotent inventory mutations`
 
-- Expose receipt, adjustment, and transfer actions.
+- Expose receipt, adjustment, and transfer service methods.
 - Accept operation keys and preserve request-hash conflict behavior.
 - Use Form Requests for authorization and validation.
 - Add one focused mutation contract test for authorization, replay, and conflict.
 
 ### Optional Commit P6.O3 — `feat: expose order and shipment mutations`
 
-- Expose order, reservation, fulfillment, and shipment actions.
+- Expose order, reservation, fulfillment, and shipment service methods.
 - Return requested, applied, and outstanding quantities where relevant.
-- Reuse the same actions as Blade, commands, jobs, and the webhook.
+- Reuse the same services as Blade, commands, jobs, and the webhook.
 - Add one representative contract workflow.
 
 ## Phase Gate
@@ -234,9 +234,8 @@ Do not begin these commits until all submission-critical implementation, tests, 
 - [ ] Reports exist before the dashboard and Blade contains no query formulas
 - [ ] Partial results visibly distinguish requested, allocated, and outstanding quantities
 - [ ] Required operations work without JavaScript
-- [ ] Demo data is produced through application actions and every provider outcome is deterministic
+- [ ] Demo data is produced through application services and every provider outcome is deterministic
 - [ ] Mock-provider controls are local-only and drive the real outbound HTTP callback path
 - [ ] Supporting catalog/dashboard work is complete, simplified, or documented as a limitation
 - [ ] No general JSON API is required for this gate
-- [ ] README, architecture, AI-usage, and video-outline documents are current
 - [ ] The intentionally small smoke and critical suites, Pint, and frontend build pass

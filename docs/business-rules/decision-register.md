@@ -39,7 +39,7 @@ This register records the decisions made during the design workshop. “Accepted
 
 | ID | Status | Decision |
 | --- | --- | --- |
-| D19 | Accepted, extensible | Build a server-rendered Bootstrap/Blade operational UI using authenticated forms, plus Artisan commands, queued jobs, scheduler entry points, and the required signed provider webhook. JavaScript/jQuery is limited to progressive enhancement and is not required for correctness. A general versioned JSON API is optional future work and is not required by the UI or challenge. Every entry point uses shared application actions. |
+| D19 | Accepted, extensible | Build a server-rendered Bootstrap/Blade operational UI using authenticated forms, plus Artisan commands, queued jobs, scheduler entry points, and the required signed provider webhook. JavaScript/jQuery is limited to progressive enhancement and is not required for correctness. A general versioned JSON API is optional future work and is not required by the UI or challenge. Every entry point uses shared application services. |
 | D20 | Accepted | Use one authenticated administrator role with access to every operational feature. For challenge scope, that administrator performs the warehouse-operator actions; separate operational roles are future work. All operational web mutations require authentication and authorization. |
 | D21 | Accepted | Shipping-provider webhooks use HMAC verification over a timestamp and raw request body, with replay-window and event-ID checks. |
 | D22 | Optional | Add a read-only ledger-to-projection reconciliation command only after core work is complete. It reports drift and never silently corrects balances. |
@@ -54,6 +54,8 @@ This register records the decisions made during the design workshop. “Accepted
 | D31 | Accepted | The timeout demonstration represents provider acceptance followed by a lost response. The external identity and future callback already exist while the local submission remains uncertain and inventory remains packed. |
 | D32 | Accepted | Uncertain submissions support provider status lookup by the stable request key as well as idempotent resubmission. Reconciliation never bypasses the confirmation webhook. |
 | D33 | Accepted | An exact duplicate callback reuses the same external event ID and raw body. Repeated HTTP attempts and application processing must remain harmless. |
+| D34 | Accepted | Use a Laravel application-service layer under domain-oriented `app/Services` namespaces. Controllers, commands, jobs, and webhooks use constructor injection and call focused service methods. Services own use-case orchestration and transaction boundaries, depend on interfaces at external boundaries, and must not become generic base classes or oversized catch-all services. |
+| D35 | Accepted sequencing choice | Create and finalize the root README, `docs/ARCHITECTURE.md`, `docs/AI_USAGE.md`, and video outline after the working demo is complete in Phase 6. Their required content remains submission-critical in Phase 7; the decision register preserves interim ownership and trade-off notes until then. |
 
 ## Deferred Review Points
 

@@ -143,9 +143,9 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 
 ## 19. Partial Result in the Operational UI
 
-**Given** an administrator requests 10 units through a Blade form and only 6 are available  
-**When** the reservation action completes  
-**Then** the redirected page visibly reports 10 requested, 6 allocated, and 4 outstanding  
+**Given** an administrator requests 10 units through a Blade form and only 6 are available<br>
+**When** the reservation service completes the operation<br>
+**Then** the redirected page visibly reports 10 requested, 6 allocated, and 4 outstanding<br>
 **And** the result is not labelled as a full reservation.
 
 ## 20. Duplicate Browser Submission
@@ -157,9 +157,9 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 
 ## 21. Core Operation Without JavaScript
 
-**Given** JavaScript is unavailable  
-**When** an authenticated administrator performs a required operation through its server-rendered form  
-**Then** validation, authorization, idempotency, and the domain action still execute correctly  
+**Given** JavaScript is unavailable<br>
+**When** an authenticated administrator performs a required operation through its server-rendered form<br>
+**Then** validation, authorization, idempotency, and the application service still execute correctly<br>
 **And** the resulting state is visible after redirect.
 
 ## 22. Inventory Reporting
@@ -188,7 +188,7 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 **Given** an accepted mock-provider shipment in the local environment<br>
 **When** the administrator requests “Send shipment confirmation now”<br>
 **Then** the mock provider persists an outbound event and sends a signed HTTP callback<br>
-**And** the control does not call the local shipment-confirmation action directly<br>
+**And** the control does not call the local shipment-confirmation service directly<br>
 **And** inventory moves to shipped only after webhook processing.
 
 ## 26. Outbound Transport Retry

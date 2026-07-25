@@ -135,7 +135,7 @@ Rules:
 - All operational UI routes require authentication.
 - All operational web mutations require authentication and authorization.
 - Form Requests validate and authorize input.
-- Controllers remain thin and call application actions.
+- Controllers remain thin and call application services.
 - Models whitelist mass-assignable attributes.
 - Blade escapes untrusted output.
 - Browser forms use CSRF protection.

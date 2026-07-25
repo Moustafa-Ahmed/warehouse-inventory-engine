@@ -1589,7 +1589,7 @@ CHECK (
                 <div class="eyebrow">08 · Laravel shape</div>
                 <h2 id="slide-9-title">Make the critical section <span class="accent">obvious in code.</span></h2>
                 <div class="code-card">
-                    <div class="code-head"><span>ReserveInventoryAction.php — illustrative shape</span><span>Laravel 13</span></div>
+                    <div class="code-head"><span>ReservationService.php — illustrative shape</span><span>Laravel 13</span></div>
                     <pre><code><span class="kw">return</span> DB::<span class="fn">transaction</span>(<span class="kw">function</span> () <span class="kw">use</span> (<span class="var">$command</span>): Reservation {
     <span class="var">$existing</span> = Reservation::<span class="fn">where</span>(<span class="str">'idempotency_key'</span>, <span class="var">$command</span>-&gt;key)-&gt;<span class="fn">first</span>();
 

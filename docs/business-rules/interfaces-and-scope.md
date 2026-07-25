@@ -2,18 +2,43 @@
 
 ## 1. Required Entry Points
 
-Every required entry point calls shared application actions:
+Every required entry point calls shared application services:
 
 ```text
 Blade web controllers --+
-Artisan commands -------+--> Application Actions --> Domain Rules --> MySQL
+Artisan commands -------+--> Application Services --> Domain Rules --> MySQL
 Queued jobs ------------+
 Provider webhook -------+
 ```
 
 Web controllers, commands, jobs, and the webhook translate input and output only. Blade views present prepared data. None of them implements inventory rules.
 
-A general JSON API is not required by the challenge or by the operational UI. If one is added later, it becomes another adapter over the same application actions.
+A general JSON API is not required by the challenge or by the operational UI. If one is added later, it becomes another adapter over the same application services.
+
+### Application Service Pattern
+
+Use domain-oriented namespaces under `app/Services`, for example:
+
+```text
+app/Services/
+├── Inventory/
+├── Orders/
+├── Reservations/
+├── Fulfillment/
+└── Shipping/
+```
+
+Rules:
+
+- Group cohesive operations in focused services such as `InventoryService`, `ReservationService`, `FulfillmentService`, `ShipmentService`, `ShipmentSubmissionService`, and `ProviderEventService`.
+- Use descriptive typed methods such as `reserve()`, `release()`, `pick()`, `submit()`, and `confirmShipment()` rather than a generic `execute()` API.
+- Inject services through constructors; do not resolve them with `app()` inside controllers, commands, or jobs.
+- Services own business orchestration, pessimistic locking, and transaction boundaries.
+- Keep slow provider HTTP work outside inventory transactions even when one service coordinates the overall use case.
+- Depend on contracts for shipping providers and other external boundaries.
+- Reuse small calculators, value objects, and narrowly focused supporting services where they protect an invariant or remove meaningful duplication.
+- Do not create `BaseService`, generic CRUD services, or repository wrappers around Eloquent without a demonstrated need.
+- Split a service when it mixes unrelated domain concerns or becomes difficult to test and explain.
 
 ## 2. Operational UI
 
@@ -23,7 +48,7 @@ Required request flow:
 
 ```text
 GET page -> render Blade form with operation key
-POST form -> authenticate -> authorize -> validate -> call application action
+POST form -> authenticate -> authorize -> validate -> call application service
           -> redirect -> display stored result or validation/domain error
 ```
 
@@ -69,7 +94,7 @@ The application has two different HTTP concerns.
 
 - Return HTML or redirects rather than requiring JSON.
 - Use named routes, session authentication, authorization, CSRF, and Form Requests.
-- Keep controllers thin and delegate every mutation to an application action.
+- Keep controllers thin and delegate every mutation to an application service.
 - May return a Blade fragment or JSON only as an optional progressive enhancement; that enhancement is not a general API contract.
 
 ### Shipping-Provider Webhook
@@ -113,7 +138,7 @@ Optional:
 inventory:reconcile
 ```
 
-Commands call shared actions and do not contain a second implementation of the domain rules.
+Commands call shared services and do not contain a second implementation of the domain rules.
 
 ## 5. Queued Jobs
 
@@ -180,7 +205,7 @@ If the optional API is implemented:
 - Use Form Requests and Eloquent API Resources.
 - Preserve the same operation-key, request-hash, and original-result semantics for mutations.
 - Expose inventory, movement, order, reservation, shipment, and operational-report queries only as needed.
-- Call the existing application actions; do not build API-specific domain behavior.
+- Call the existing application services; do not build API-specific domain behavior.
 - Test it as an independent contract.
 - Do not rewrite the Blade UI to depend on it.
 

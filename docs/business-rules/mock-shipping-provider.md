@@ -10,7 +10,7 @@ The mock provider must not:
 
 - Change warehouse balances directly.
 - Mark a local shipment as shipped or delivered directly.
-- Call shipment-confirmation application actions.
+- Call shipment-confirmation application services.
 - Share the warehouse application's transaction when accepting a shipment.
 
 This separation makes the demonstration representative of a real carrier integration.
@@ -166,7 +166,7 @@ Rules:
 
 - Controls exist only in local/testing environments.
 - They operate on mock-provider state, not warehouse state.
-- “Send shipment confirmation now” creates or releases a provider outbound event; it never calls the shipment-confirmation action directly.
+- “Send shipment confirmation now” creates or releases a provider outbound event; it never calls the shipment-confirmation service directly.
 - Ordinary delivery confirmation requires provider handoff confirmation.
 - The explicit out-of-order control is allowed to violate that order so pending-event recovery can be demonstrated.
 - Replay keeps the original external event ID and raw body, proving inbox and domain idempotency.

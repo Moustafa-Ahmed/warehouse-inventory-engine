@@ -95,7 +95,7 @@ Automatic recovery uses:
 
 1. An after-commit job when stock is received.
 2. A scheduled `inventory:allocate-backorders` command as a safety net.
-3. The same reservation action used by authenticated web requests and any future API.
+3. The same reservation service used by authenticated web requests and any future API.
 
 Allocation priority is FIFO by eligible order-item creation time.
 
@@ -134,7 +134,7 @@ Edits apply only the delta.
 Changing 10 to 14:
 
 - Adds four units of outstanding demand.
-- Attempts allocation through the normal reservation action when requested.
+- Attempts allocation through the normal reservation service when requested.
 - Does not release or recreate existing commitments.
 
 ### Quantity Decrease

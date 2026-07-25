@@ -19,7 +19,7 @@ Scope:
 Done when:
 
 - Later order, reservation, fulfillment, shipment, and UI code can call one calculator.
-- No action needs temporary or duplicated progress formulas.
+- No service method needs temporary or duplicated progress formulas.
 - Partial allocation cannot be mistaken for partial shipment or delivery.
 
 ## Commit P3.2 — `feat: create order demand`
@@ -28,7 +28,7 @@ Done when:
 
 Scope:
 
-- Implement actions to create orders and order items.
+- Implement order and order-item creation through `OrderService`.
 - Validate positive ordered quantities and product eligibility.
 - Initialize projections through the shared progress calculator.
 - Add factories for open, partial, and terminal order demand.
@@ -45,7 +45,7 @@ Done when:
 
 Scope:
 
-- Implement the warehouse-scoped reservation action.
+- Implement warehouse-scoped reservation through `ReservationService::reserve()`.
 - Lock the selected balance before calculating availability.
 - Allocate `min(available, outstanding)` quantity.
 - Return requested, allocated, outstanding, and fully-allocated indicators.
@@ -75,7 +75,7 @@ Scope:
 
 Done when:
 
-- Picked, packed, and shipped quantities cannot be released through this action.
+- Picked, packed, and shipped quantities cannot be released through this service method.
 - Released-but-not-cancelled demand becomes allocatable again.
 - Cancelled quantity no longer appears as outstanding demand.
 
@@ -87,7 +87,7 @@ Scope:
 
 - Implement delta-based quantity edits.
 - Treat an increase as new outstanding demand.
-- Use the existing release/cancellation action for an eligible decrease.
+- Use the existing `ReservationService` release/cancellation method for an eligible decrease.
 - Prevent reductions below shipped and cancelled quantity.
 - Reject reductions that require picked or packed physical reversal.
 - Recalculate progress through the shared calculator.
@@ -96,7 +96,7 @@ Scope:
 Done when:
 
 - Existing commitments are not released and recreated during edits.
-- The edit action does not contain a second release implementation.
+- `OrderService` does not contain a second release implementation.
 - Quantity conservation holds after every valid edit.
 
 ## Commit P3.6 — `feat: allocate outstanding order items after stock receipt`
@@ -106,7 +106,7 @@ Done when:
 Scope:
 
 - Implement FIFO selection of eligible outstanding order items.
-- Implement `AllocateBackorderJob` as a thin adapter over the reservation action.
+- Implement `AllocateBackorderJob` as a thin adapter over `ReservationService`.
 - Implement `inventory:allocate-backorders`.
 - Wire stock receipt to dispatch the new job only after commit.
 - Keep the scheduled command as the recovery path if dispatch is lost.
@@ -143,9 +143,9 @@ Done when:
 Scope:
 
 - Implement temporary reservation confirmation.
-- Implement expiration action for eligible expired holds.
+- Implement expiration for eligible expired holds through `ReservationService::expire()`.
 - Add `reservations:expire` command that processes bounded batches.
-- Release stock through the existing release action.
+- Release stock through the existing `ReservationService` method.
 - Make command execution idempotent and safe under overlap.
 - Add one time-controlled test proving an expired temporary hold releases once while a confirmed reservation remains.
 
@@ -176,7 +176,7 @@ Done when:
 
 ## Phase Gate
 
-- [ ] One shared quantity/progress calculator is used by order and reservation actions
+- [ ] One shared quantity/progress calculator is used by order and reservation services
 - [ ] Full, partial, and zero reservation behavior passes
 - [ ] Release and cancellation do not touch physically progressed stock
 - [ ] Order edits reuse release behavior and conserve quantity
@@ -184,5 +184,4 @@ Done when:
 - [ ] Backorders recover through job and command paths wired after implementation
 - [ ] Supporting temporary confirmation/expiration is complete or explicitly recorded for the post-Phase-5 time review
 - [ ] Final-unit concurrency test passes on MySQL
-- [ ] README, architecture, and AI-usage documents are current
 - [ ] Smoke and critical tests plus Pint pass

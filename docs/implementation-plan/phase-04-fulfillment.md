@@ -2,7 +2,7 @@
 
 ## Objective
 
-Implement physical progression from confirmed reservation through packed shipment preparation, including explicit reversals and partial quantities. Every action uses the progress calculator introduced in Phase 3.
+Implement physical progression from confirmed reservation through packed shipment preparation, including explicit reversals and partial quantities. Every service operation uses the progress calculator introduced in Phase 3.
 
 ## Commit P4.1 — `feat: pick confirmed reserved inventory`
 
@@ -10,7 +10,7 @@ Implement physical progression from confirmed reservation through packed shipmen
 
 Scope:
 
-- Implement partial and full pick action.
+- Implement partial and full picking through `FulfillmentService::pick()`.
 - Allow only confirmed, open reservations.
 - Move reserved to picked through the movement applicator.
 - Recalculate reservation and order-item progress through the shared calculator.
@@ -28,7 +28,7 @@ Done when:
 
 Scope:
 
-- Implement explicit picked-to-available return action.
+- Implement explicit picked-to-available return through `FulfillmentService::returnPicked()`.
 - Require administrator actor and reason.
 - Restore order-item outstanding demand unless separately cancelled.
 - Append compensating movement and history.
@@ -38,7 +38,7 @@ Scope:
 Done when:
 
 - Cancelling a picked quantity without physical return is impossible.
-- Returned stock becomes available only through this explicit action.
+- Returned stock becomes available only through this explicit service operation.
 
 ## Commit P4.3 — `feat: pack picked inventory`
 
@@ -66,7 +66,7 @@ Scope:
 - Implement packed-to-picked unpacking.
 - Reject quantity assigned to an active or confirmed shipment.
 - Require an explicit reason and operation key.
-- Recalculate progress and append history through shared actions.
+- Recalculate progress and append history through shared services.
 - Cover normal unpack and assigned-quantity rejection in the lifecycle test.
 
 Done when:
@@ -100,7 +100,7 @@ Done when:
 Scope:
 
 - Add one submission-critical lifecycle covering reservation, partial release/cancellation, pick, pack, and shipment preparation.
-- If the supporting reversal actions are implemented, extend the lifecycle with picked return and eligible unpacking.
+- If the supporting reversal service methods are implemented, extend the lifecycle with picked return and eligible unpacking.
 - Assert the order-item conservation equation after each step.
 - Inject one failure at a movement/transition boundary.
 - Verify each state change has one matching movement and history entry.
@@ -113,10 +113,9 @@ Done when:
 
 ## Phase Gate
 
-- [ ] Pick and pack actions use the movement applicator and shared progress calculator
+- [ ] Pick and pack service methods use the movement service and shared progress calculator
 - [ ] Supporting return and unpack work is complete or explicitly recorded for the post-Phase-5 time review
 - [ ] Shipment preparation supports partial quantities without inventory deduction
 - [ ] Cross-warehouse and duplicate packed-quantity assignment are rejected
 - [ ] Conservation tests cover the representative normal and reversal flow
-- [ ] README, architecture, and AI-usage documents are current
 - [ ] Smoke, focused lifecycle, and calculator tests plus Pint pass

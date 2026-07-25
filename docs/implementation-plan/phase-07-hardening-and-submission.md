@@ -2,7 +2,7 @@
 
 ## Objective
 
-Audit the important risks, finalize the living submission documents, run clean-state verification, record the required walkthrough, and deliver an accessible GitHub or GitLab repository.
+After the Phase 6 demo works, audit the important risks, create the required submission documents from the implemented system, run clean-state verification, record the required walkthrough, and deliver an accessible GitHub or GitLab repository.
 
 ## Commit P7.1 — `test: complete the risk-based smoke and critical suite`
 
@@ -10,7 +10,7 @@ Audit the important risks, finalize the living submission documents, run clean-s
 
 Scope:
 
-- Classify each [Acceptance Scenario](../business-rules/acceptance-scenarios.md) as focused automated, smoke, walkthrough, or manual evidence.
+- After the Phase 6 demo works, classify each [Acceptance Scenario](../business-rules/acceptance-scenarios.md) as focused automated, smoke, walkthrough, or manual evidence.
 - Ensure every critical risk in the [Testing Strategy](testing-strategy.md) has a focused Pest test.
 - Ensure primary pages, required commands, migration/seeding, and one representative form flow are in the smoke suite.
 - Assert movements, transitions, operations, and projections in critical tests—not only return values or HTTP responses.
@@ -47,7 +47,7 @@ Done when:
 
 Scope:
 
-- Finalize the living root `README.md`.
+- Replace the Laravel placeholder with the final root `README.md`.
 - Verify prerequisites, MySQL setup, environment variables, installation, migration, seeding, workers, scheduler, frontend build, commands, and test instructions.
 - Document demo administrator setup, callback URL, HMAC secret, random outcome weights, non-synchronous queue connection, queue worker, and mock-provider controls.
 - Document assumptions, priority decisions, deferred supporting work, and known limitations.
@@ -64,8 +64,8 @@ Done when:
 
 Scope:
 
-- Finalize `docs/ARCHITECTURE.md` against the implemented code.
-- Describe domain model, schema, lifecycle, movements, projections, locking, idempotency, progress calculation, actions, jobs, persistent mock-provider boundary, outbound HTTP delivery, inbound event processing, reconciliation, security, scaling, and trade-offs.
+- Create `docs/ARCHITECTURE.md` against the implemented code.
+- Describe domain model, schema, lifecycle, movements, projections, locking, idempotency, progress calculation, application services, jobs, persistent mock-provider boundary, outbound HTTP delivery, inbound event processing, reconciliation, security, scaling, and trade-offs.
 - Explain the design patterns and SOLID principles actually used.
 - Link the business rules, ERD, and implementation evidence.
 - Update diagrams to match implemented behavior.
@@ -74,7 +74,7 @@ Scope:
 Done when:
 
 - Architecture documentation describes actual code rather than the original plan.
-- A reviewer can trace each important guarantee to its schema/action/test evidence.
+- A reviewer can trace each important guarantee to its schema/service/test evidence.
 
 ## Commit P7.5 — `docs: finalize AI usage and engineering ownership`
 
@@ -82,7 +82,7 @@ Done when:
 
 Scope:
 
-- Finalize the living `docs/AI_USAGE.md`.
+- Create `docs/AI_USAGE.md`.
 - Record how AI assisted with alternatives, business-rule workshops, documentation, implementation, and review.
 - Summarize important prompt/workflow categories.
 - Distinguish generated, manually modified, rejected, and personally decided work.
@@ -122,6 +122,7 @@ Done when:
 Scope:
 
 - Capture and add the required passing-test screenshot after P7.6 succeeds.
+- Create and finalize the video outline against the working demo before recording.
 - Record a target 18–19 minute walkthrough using this timed outline:
   - **0:00–2:00 — Introduction:** identity, relevant ERP/inventory/warehouse/logistics/POS/CRUD experience, and why this architecture was chosen.
   - **2:00–7:00 — Architecture:** domain model, schema, reservation lifecycle, ledger/projections, concurrency, security, decisions, patterns, and SOLID.

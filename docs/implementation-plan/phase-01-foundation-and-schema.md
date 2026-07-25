@@ -2,7 +2,7 @@
 
 ## Objective
 
-Establish the test environment, living submission documents, domain vocabulary, provider boundary, and relational foundation before implementing state-changing business operations.
+Establish the test environment, service-layer conventions, domain vocabulary, provider boundary, and relational foundation before implementing state-changing business operations. Final submission documents are intentionally created after the Phase 6 demo is working.
 
 ## Commit P1.1 — `docs: record agreed business rules and implementation roadmap`
 
@@ -21,25 +21,7 @@ Done when:
 - Accepted, deferred, optional, and provisional decisions are distinguishable.
 - No application behavior changes.
 
-## Commit P1.2 — `docs: establish living submission documents`
-
-**Priority:** Submission-critical
-
-Scope:
-
-- Replace the Laravel placeholder in the root `README.md` with an honest setup/status skeleton.
-- Create `docs/ARCHITECTURE.md` with headings for the required architecture topics and links to the business rules.
-- Create `docs/AI_USAGE.md` with the AI-assisted work, personally selected decisions, and rejected alternatives known so far.
-- Add explicit “living document” markers so incomplete sections are not presented as finished.
-- Add a short video-outline skeleton matching the challenge’s required sections and timings.
-
-Done when:
-
-- AI usage is recorded from the beginning rather than reconstructed at the end.
-- Later commits can update setup and architecture beside the code they change.
-- Required document paths already exist and clearly show their current status.
-
-## Commit P1.3 — `test: establish the risk-based Pest harness`
+## Commit P1.2 — `test: establish the risk-based Pest harness`
 
 **Priority:** Submission-critical
 
@@ -58,7 +40,7 @@ Done when:
 - Later commits have a clear place for smoke versus critical tests.
 - No test depends on the development database or flaky shared state.
 
-## Commit P1.4 — `feat: add inventory domain enums and value objects`
+## Commit P1.3 — `feat: add inventory domain enums and value objects`
 
 **Priority:** Submission-critical
 
@@ -72,10 +54,10 @@ Scope:
 Done when:
 
 - Status vocabulary is centralized and type safe.
-- No controller, job, or action will need ad-hoc status strings.
+- No controller, job, or service will need ad-hoc status strings.
 - Domain exceptions expose structured context.
 
-## Commit P1.5 — `feat: define the shipping provider boundary and deterministic fake`
+## Commit P1.4 — `feat: define the shipping provider boundary and deterministic fake`
 
 **Priority:** Submission-critical
 
@@ -96,7 +78,7 @@ Done when:
 - Every required outcome can be selected deterministically.
 - The small in-memory fake remains useful for isolated contract tests, while random selection, callback delivery, HMAC, and persistence remain intentionally deferred until the shipment/event infrastructure exists.
 
-## Commit P1.6 — `feat: add product and warehouse catalogs`
+## Commit P1.5 — `feat: add product and warehouse catalogs`
 
 **Priority:** Submission-critical
 
@@ -113,7 +95,7 @@ Done when:
 - Products and warehouses cannot be duplicated by business key.
 - Historical entities can be deactivated without destructive deletion.
 
-## Commit P1.7 — `feat: add idempotent operation records`
+## Commit P1.6 — `feat: add idempotent operation records`
 
 **Priority:** Submission-critical
 
@@ -130,7 +112,7 @@ Done when:
 - One operation key cannot represent two persisted operations.
 - Request hashes and original outcomes have durable storage.
 
-## Commit P1.8 — `feat: add inventory balances and movement ledger schema`
+## Commit P1.7 — `feat: add inventory balances and movement ledger schema`
 
 **Priority:** Submission-critical
 
@@ -149,7 +131,7 @@ Done when:
 - Negative persisted buckets are rejected.
 - Movement rows can describe receipt, reservation, transfer, fulfillment, and shipment.
 
-## Commit P1.9 — `feat: add order and order item schema`
+## Commit P1.8 — `feat: add order and order item schema`
 
 **Priority:** Submission-critical
 
@@ -165,7 +147,7 @@ Done when:
 - One order can contain multiple products.
 - Order items can later own multiple reservations and shipment items.
 
-## Commit P1.10 — `feat: add reservations and transition history schema`
+## Commit P1.9 — `feat: add reservations and transition history schema`
 
 **Priority:** Submission-critical
 
@@ -182,7 +164,7 @@ Done when:
 - The schema supports future multi-warehouse allocation.
 - Expiring reservations are efficiently queryable.
 
-## Commit P1.11 — `feat: add shipment and provider reliability schema`
+## Commit P1.10 — `feat: add shipment and provider reliability schema`
 
 **Priority:** Submission-critical
 
@@ -203,7 +185,7 @@ Done when:
 - Due callbacks and uncertain provider shipments are efficiently discoverable.
 - Duplicate external event IDs are rejected by the database.
 
-## Commit P1.12 — `feat: seed reference warehouse data`
+## Commit P1.11 — `feat: seed reference warehouse data`
 
 **Priority:** Submission-critical
 
@@ -212,7 +194,7 @@ Scope:
 - Seed products, warehouses, and zero-valued inventory balance reference data.
 - Keep factories for important isolated states used by focused tests.
 - Do not directly seed non-zero balances, movements, orders, reservations, shipments, attempts, events, or histories.
-- Reserve coherent end-to-end scenario data for Phase 6, after the application actions exist.
+- Reserve coherent end-to-end scenario data for Phase 6, after the application services exist.
 - Add a `migrate:fresh --seed` smoke test.
 
 Done when:
@@ -223,13 +205,12 @@ Done when:
 
 ## Phase Gate
 
-- [ ] Living README, architecture, AI-usage, and video-outline documents exist and are current
 - [ ] Smoke and critical test harnesses use the documented MySQL environment
 - [ ] Provider contract and deterministic fake outcomes pass focused tests
 - [ ] Fresh migrations succeed on MySQL
 - [ ] Rollback works for reversible migrations
 - [ ] Factories produce valid isolated and related models
-- [ ] Reference seed data loads without bypassing inventory actions
+- [ ] Reference seed data loads without bypassing inventory services
 - [ ] Schema includes all challenge-required tables
 - [ ] The smoke suite and applicable focused tests pass
 - [ ] Pint passes on changed PHP

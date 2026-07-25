@@ -6,11 +6,11 @@ Testing follows the [Risk-Based Testing Strategy](testing-strategy.md): smoke te
 
 ## Delivery Strategy
 
-Correctness is built from the database outward while external boundaries and required submission documents are de-risked early:
+Correctness is built from the database outward while external boundaries are de-risked early. Required submission documents are produced from the working Phase 6 demo during Phase 7:
 
 ```text
-Project/test foundation + living submission documents
-    -> domain vocabulary + provider contract/deterministic fake
+Project/test foundation
+    -> service conventions + domain vocabulary + provider contract/deterministic fake
     -> schema, persistent mock-provider state, and reference data
     -> canonical movements and balance projections
     -> orders, progress, reservations, release, and backorders
@@ -20,7 +20,7 @@ Project/test foundation + living submission documents
     -> risk audit, evidence, video, and repository delivery
 ```
 
-No task may call a class, job, action, query service, or document that is planned only in a later task.
+No task may call a class, job, application service, query service, or document that is planned only in a later task.
 
 ## Priority Levels
 
@@ -38,7 +38,7 @@ Supporting tasks encountered before Phase 5 may be parked while the submission-c
 
 | Phase | Outcome | Priority |
 | --- | --- | --- |
-| [1. Foundation and Schema](phase-01-foundation-and-schema.md) | Living submission docs, MySQL test harness, early provider boundary, warehouse/mock-provider schema, factories, and reference seed data | Submission-critical |
+| [1. Foundation and Schema](phase-01-foundation-and-schema.md) | MySQL test harness, service conventions, early provider boundary, warehouse/mock-provider schema, factories, and reference seed data | Submission-critical |
 | [2. Inventory Ledger](phase-02-inventory-ledger.md) | Idempotent receipts, adjustments, transfers, movements, projections, and concurrency proof | Submission-critical |
 | [3. Orders and Reservations](phase-03-orders-and-reservations.md) | Shared progress calculation, partial allocation, release, edits, expiration, and backorder recovery | Submission-critical |
 | [4. Fulfillment](phase-04-fulfillment.md) | Pick, return, pack, unpack, shipment preparation, and conservation | Submission-critical |
@@ -52,7 +52,7 @@ Each numbered task is intended to become one independently reviewable commit.
 
 1. Use the proposed commit subject or a similarly specific imperative subject.
 2. Keep schema, model relationships, and factory support for one concern together.
-3. Keep important action code and its focused risk test in the same commit.
+3. Keep important service behavior and its focused risk test in the same commit.
 4. Do not mix presentation polish with domain behavior.
 5. Do not introduce a dependency without explicit approval.
 6. Generate Laravel files with `php artisan make:* --no-interaction`.
@@ -60,7 +60,7 @@ Each numbered task is intended to become one independently reviewable commit.
 8. Run `vendor/bin/pint --dirty --format agent` after modifying PHP.
 9. Run `php artisan test --compact` at every phase gate.
 10. Update the business rules and decision register with any approved rule change.
-11. Keep `README.md`, `docs/ARCHITECTURE.md`, and `docs/AI_USAGE.md` current as implementation evolves; Phase 7 finalizes them rather than reconstructing them.
+11. Preserve implementation decisions and ownership notes in the decision register; after the Phase 6 demo, Phase 7 creates and finalizes `README.md`, `docs/ARCHITECTURE.md`, `docs/AI_USAGE.md`, and the video outline from the implemented system.
 12. Avoid WIP commits on the submission branch.
 
 ## Definition of a Completed Commit
@@ -73,7 +73,7 @@ A task is complete only when:
 - No unrelated files are changed.
 - Migrations roll forward and backward where safe.
 - PHP formatting passes.
-- A short documentation update is included when setup, architecture, AI usage, assumptions, or limitations changed.
+- Business-rule and decision-register changes are included when assumptions or decisions change; final submission documents are produced after the demo in Phase 7.
 - The commit can be explained and demonstrated independently.
 
 The plan does not require a unit test for every class or branch, and it does not target a coverage percentage.
@@ -107,7 +107,7 @@ Optional work is deliberately isolated:
 Do not begin it unless:
 
 1. All submission-critical tests pass.
-2. Required documentation is current.
+2. Required business-rule and planning documentation is current.
 3. Evidence and the video outline exist.
 4. The remaining delivery time has been reviewed.
 
