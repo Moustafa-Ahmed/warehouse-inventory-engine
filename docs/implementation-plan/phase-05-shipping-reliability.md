@@ -62,14 +62,15 @@ Scope:
 - Convert validated callback input into a readonly shipping DTO before passing it to the provider-webhook service; do not pass the raw request or an untyped array into business orchestration.
 - Validate provider, event ID, timestamp replay window, signature, JSON structure, quantities, and supported event type.
 - Persist a `ProviderWebhookReceipt` before dispatching processing.
-- Acknowledge duplicates using the unique provider/external-event key.
+- On a provider/external-event unique-key conflict, compare the incoming raw body bytes with the persisted immutable body.
+- Resume or enqueue incomplete receipts only when the identity and raw body are identical; reject a mismatched-body collision as a non-retryable conflict without applying a business effect.
 - Rate limit the webhook independently from session-authenticated routes.
-- Use one focused security dataset for valid, missing, expired, invalid, malformed, and duplicate callback input.
+- Use one focused security dataset for valid, missing, expired, invalid, malformed, identical-duplicate, and mismatched-body callback input.
 
 Done when:
 
 - Invalid callbacks cannot reach domain processing.
-- A safely persisted duplicate receives a successful idempotent response.
+- A safely persisted identical duplicate receives a successful idempotent response, while a mismatched-body identity collision cannot reach domain processing.
 - Valid callbacks survive a worker crash after HTTP acknowledgement.
 
 ## Commit P5.4 — `feat: deliver mock-provider callbacks over signed HTTP`
@@ -86,13 +87,15 @@ Scope:
 - Retain network failures, timeouts, `429`, and retryable server responses for bounded exponential retry.
 - Mark non-retryable authentication, validation, and configuration responses visibly failed rather than retrying forever.
 - Record attempt count, timestamps, and safe response/error context without signatures or secrets.
-- Implement bounded `mock-provider:dispatch-pending` discovery.
-- Fake outbound HTTP in tests and assert URL, safe headers, stable webhook identity/body, acknowledgement, retryable failure, and permanent transport failure.
+- Claim delivery attempts with a configured lease and let bounded discovery recover `delivering` rows whose `last_attempted_at` is older than the lease cutoff.
+- Implement bounded `mock-provider:dispatch-pending` discovery for due pending/retry-scheduled rows and expired delivering claims.
+- Fake outbound HTTP in tests and assert URL, safe headers, stable webhook identity/body, acknowledgement, retryable failure, permanent transport failure, and recovery of an expired delivering claim.
 
 Done when:
 
 - Local/demo callbacks cross the real HTTP webhook boundary.
 - Transport retry reuses the same external event ID and raw body.
+- A worker crash after claiming delivery cannot leave a webhook permanently stuck as delivering.
 - Automated tests do not need a running web server or real network access.
 - A failed delivery remains visible and recoverable according to its failure class.
 
@@ -234,7 +237,7 @@ Scope:
 - Add guarded `mock-provider:send-webhook` and `mock-provider:replay-webhook` commands.
 - Reject controls outside local/testing environments and for non-mock provider adapters.
 - Ensure controls mutate only mock-provider state or dispatch callback delivery; they never invoke warehouse shipment or inventory services directly.
-- Add a focused authorization/environment test and a small control-mapping dataset.
+- Add a focused authorization/environment test and a small control-mapping dataset proving exact replay resolves the existing webhook row, retains its external event ID and raw body, and increments its attempt count without inserting another row.
 
 Done when:
 
@@ -250,7 +253,7 @@ Scope:
 
 - Schedule pending-shipment discovery.
 - Schedule reconciliation for provider submissions with unknown outcomes.
-- Schedule due/retryable mock-provider webhook delivery.
+- Schedule due/retryable mock-provider webhook delivery and recovery of expired `delivering` claims.
 - Schedule pending provider webhook receipt processing.
 - Schedule backorder allocation.
 - Schedule reservation expiration when the supporting expiration task is included; otherwise record it for the time review and final limitations.
@@ -279,7 +282,8 @@ Done when:
 - [ ] HMAC validation and replay protection pass
 - [ ] Local/demo callback delivery uses actual signed HTTP
 - [ ] Outbound transport retries retain one webhook identity and are observable
-- [ ] Duplicate and out-of-order provider webhook receipts are safe
+- [ ] Expired outbound delivery claims are recoverable after worker termination
+- [ ] Identical duplicates, mismatched-body identity collisions, and out-of-order provider webhook receipts are safe
 - [ ] Shipment confirmation is atomic with inventory deduction
 - [ ] Every challenge-required mock-provider mode is deterministic and random mode remains available
 - [ ] Demo controls are unavailable outside local/testing environments

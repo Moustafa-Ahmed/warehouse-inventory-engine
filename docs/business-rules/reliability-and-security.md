@@ -72,7 +72,7 @@ Core recovery paths:
 - Outstanding order items are discoverable by the backorder allocator.
 - Pending shipments are discoverable by the shipment command.
 - Provider submissions with unknown outcomes are discoverable by the provider-submission reconciliation command.
-- Due and retryable mock-provider webhooks are discoverable by the mock-provider dispatcher.
+- Due and retryable mock-provider webhooks, plus `delivering` attempts whose configured claim lease has expired, are discoverable by the mock-provider dispatcher.
 - Pending provider webhook receipts are discoverable by the provider-webhook command.
 - Temporary reservations are discoverable by the expiration command.
 
@@ -86,17 +86,18 @@ The unique identity is:
 provider + external_event_id
 ```
 
-Processing states include:
+The owner-approved processing states are:
 
 - Pending.
 - Processed.
 - Ignored as stale.
-- Failed and retryable.
+- Retryable failure.
 - Failed permanently.
 
 Rules:
 
-- Duplicate callbacks are acknowledged successfully.
+- Only duplicates with the same provider, external event ID, and identical raw body bytes are acknowledged successfully.
+- A provider/external-event identity collision with different raw body bytes is rejected as a non-retryable conflict; the original receipt remains unchanged.
 - A duplicate does not create another movement or transition.
 - Valid next-state webhooks process immediately or through a job.
 - A webhook ahead of the shipment state remains pending.

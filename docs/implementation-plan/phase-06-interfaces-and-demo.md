@@ -111,7 +111,8 @@ Scope:
 - Show accepted provider submissions, unknown outcomes, permanent failures, and webhook processing.
 - Show the related mock-provider shipment and mock-provider webhook delivery history.
 - Add provider webhook receipt screens with safe status/error context.
-- Add retry controls that reuse the established provider request identity.
+- Add submission retry/reconciliation controls that reuse the stable provider request identity.
+- Keep webhook retry, redelivery, and replay controls tied to the persisted `MockProviderWebhook`; reuse its original external event ID and immutable raw body.
 - Add a local-only per-shipment provider-outcome selector.
 - Add local-only forms to send shipment confirmation, send delivery confirmation, replay the last webhook, and send an out-of-order delivery webhook.
 - Ensure every mock-provider form changes provider state or queues an HTTP callback; none may call shipment or inventory transition services directly.

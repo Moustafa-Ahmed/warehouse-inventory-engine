@@ -54,7 +54,7 @@ Each mock-provider webhook stores:
 - Event type and immutable raw JSON body.
 - Occurrence time and next delivery time.
 - Delivery state, attempt count, last attempt time, and safe response/error context.
-- The original event reference when it is an explicit replay.
+- An attempt count that increases for transport retries and explicit replay.
 
 `ProviderWebhookReceipt` is the warehouse application's receiving history. `MockProviderWebhook` is the mock provider's sending history. They are separate records because they represent opposite sides of the HTTP boundary.
 
@@ -129,12 +129,14 @@ The provider never blocks a web request by sleeping.
 - Delayed confirmation sets it to a future time.
 - “Send now” changes an eligible mock-provider webhook to due now.
 - After commit, due work is dispatched to the queue.
-- A scheduled bounded sweeper rediscovers due mock-provider webhooks if dispatch was interrupted.
+- A delivery attempt atomically claims the webhook as `delivering`, increments `attempt_count`, and records `last_attempted_at`.
+- The `delivering` claim has a configured lease. A scheduled bounded sweeper may reclaim an attempt whose `last_attempted_at` is older than the lease cutoff, covering worker termination after the claim.
+- The scheduled bounded sweeper also rediscovers due pending or retry-scheduled webhooks if dispatch was interrupted.
 - The queue worker sends the actual callback HTTP request independently from the administrator's browser request.
 
 Local demonstration therefore requires a non-synchronous queue connection, a running queue worker, and a callback URL reachable from that worker. The callback job must not make a loopback HTTP request while executing on Laravel's `sync` queue inside the original web request.
 
-The UI shows scheduled, due, delivering, acknowledged, retryable-failed, and permanently-failed callback states so “waiting” is observable rather than hidden.
+The UI shows pending, delivering, retry-scheduled, acknowledged, and permanently-failed callback states. A callback is eligible for bounded discovery when it is pending or retry-scheduled with `next_delivery_at` in the past, or when it is delivering with `last_attempted_at` older than the configured delivery lease.
 
 ## 8. Timeout and Reconciliation
 
@@ -178,16 +180,18 @@ An exact duplicate is represented by the same external event ID and raw body.
 
 - The mock provider may send it more than once.
 - The `provider_webhook_receipts` unique constraint accepts only one provider/webhook identity.
-- Every safe duplicate receives an idempotent success response.
+- On a unique-key conflict, the receiver compares the incoming raw body bytes with the persisted immutable `raw_body`.
+- An identical duplicate reloads the receipt and resumes or enqueues processing when it is not complete; safely persisted identical duplicates receive an idempotent success response.
+- Reusing the same provider and external event ID with different raw body bytes returns a non-retryable conflict response. The original receipt remains unchanged and no shipment or delivery effect is applied.
 - The shipment or delivery effect occurs once.
 
-Transport retry and deliberate replay both use the same identity. The `MockProviderWebhook` record distinguishes why an additional HTTP attempt occurred.
+Transport retry and deliberate replay both reuse the same `MockProviderWebhook` row, identity, and immutable raw body. Each HTTP delivery attempt, including one rejected for an identity/body mismatch, increases that outbound row's attempt count. A mismatch is marked as a non-retryable delivery failure; it does not create another receipt, alter the original receipt, or apply another shipment effect. No replay-linkage record is created.
 
 ## 11. Recovery and Visibility
 
 Scheduled recovery discovers:
 
-- Due or retryable mock-provider webhooks.
+- Due or retryable mock-provider webhooks, including expired `delivering` claims.
 - Provider submissions with unknown outcomes needing provider status lookup.
 - Pending provider webhook receipts whose prerequisites may now exist.
 

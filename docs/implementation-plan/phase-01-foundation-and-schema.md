@@ -207,16 +207,19 @@ Scope:
 - Add `MockProviderShipment`/`mock_provider_shipments` with unique request keys, external identities, forced/random scenario metadata, provider status, and lifecycle timestamps.
 - Add `MockProviderWebhook`/`mock_provider_webhooks` with immutable webhook identity/body, delivery schedule, delivery status, attempt count, and safe response/error context.
 - Add `ProviderWebhookReceipt`/`provider_webhook_receipts` with unique provider/external-event identity, raw payload, occurrence time, processing status, and safe error context.
-- Before writing the migrations, define and obtain owner approval for the exact mock-provider shipment, webhook-delivery, and webhook-receipt processing states.
-- Decide whether an exact replay reuses the existing mock-provider webhook row or requires another persisted record. Preserve one immutable external event identity/body and do not add replay linkage without a demonstrated need.
+- Persist the owner-approved mock-provider shipment, webhook-delivery, and webhook-receipt processing states recorded in D40.
+- Reject an ordinary attempt to insert another mock-provider webhook with an existing external event identity. Deliberate replay remains a Phase 5 behavior that must resolve and reuse the existing row rather than insert another one.
+- Preserve one immutable external event identity/body for later exact replay; Phase 5 increments that row's attempt count without replay-linkage records.
 - Keep mock-provider shipment state, outbound webhook delivery state, and inbound webhook receipt processing state in separate enums.
 - Add models, relationships, casts, indexes, and factory states.
+- Add one focused schema assertion proving a second mock-provider webhook row with the same external event identity is rejected.
 
 Done when:
 
 - Mock-provider shipment and webhook state are distinct from provider submissions and provider webhook receipts.
 - Due mock-provider webhooks and pending provider webhook receipts are efficiently discoverable.
-- Duplicate external event IDs are rejected by the database.
+- Duplicate `MockProviderWebhook` external event IDs and duplicate provider/external-event receipt identities are rejected by the database.
+- The schema supports Phase 5 exact replay by retaining one webhook row with immutable identity and body; replay behavior is not implemented or claimed complete in this schema task.
 
 ## Commit P1.12 — `feat: seed reference warehouse data`
 

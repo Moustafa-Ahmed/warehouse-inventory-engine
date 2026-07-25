@@ -172,7 +172,7 @@ Core schedules:
 
 - Process pending shipments.
 - Reconcile provider submissions with unknown outcomes.
-- Deliver due and retryable mock-provider webhooks.
+- Deliver due and retryable mock-provider webhooks and recover expired `delivering` claims.
 - Expire temporary reservations.
 - Process pending provider webhook receipts.
 - Allocate outstanding order items.

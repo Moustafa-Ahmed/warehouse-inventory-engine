@@ -1526,7 +1526,7 @@ User A and User B are ready.</div>
 
                     <article class="entity span-3"><h3>shipments</h3><p>order_id · provider<br>provider_request_key UNIQUE · status</p></article>
                     <article class="entity span-3"><h3>shipment_items</h3><p>shipment_id · order_item_id<br>quantity</p></article>
-                    <article class="entity audit span-3"><h3>shipment_events (planned)</h3><p>Persistence contract pending<br>provider + external_event_id UNIQUE · raw payload · processed_at</p></article>
+                    <article class="entity audit span-3"><h3>provider_webhook_receipts</h3><p>provider + external_event_id UNIQUE<br>raw_body · processed_at</p></article>
                     <article class="entity audit span-3"><h3>inventory_movements</h3><p>operation_key UNIQUE<br>bucket deltas · source reference</p></article>
 
                     <article class="entity audit span-6"><h3>reservation_transitions</h3><p>reservation_id · from_status · to_status · quantities · actor · reason</p></article>
@@ -1665,7 +1665,7 @@ CHECK (
                     <div class="layer"><strong>Database</strong><span>UNIQUE constraints are the final arbiter when two identical requests arrive simultaneously.</span></div>
                     <div class="layer"><strong>Queue</strong><span>ShouldBeUnique reduces duplicate work, but the database guard still protects correctness.</span></div>
                     <div class="layer"><strong>Provider request</strong><span>Reuse one stable request key after timeouts so the carrier does not create a second shipment.</span></div>
-                    <div class="layer"><strong>Webhook event (planned)</strong><span>Pending schema: store the raw callback under UNIQUE(provider, external_event_id) before applying its transition. On conflict, resume processing when processed_at is null.</span></div>
+                    <div class="layer"><strong>Provider webhook receipt</strong><span>Persist the raw callback under UNIQUE(provider, external_event_id) before applying its transition. On conflict, resume an identical unprocessed receipt and reject a mismatched raw body.</span></div>
                 </div>
                 <div class="callout" style="max-width: 800px; margin: 16px auto 0;">
                     <strong>Key idea</strong>
@@ -1682,7 +1682,7 @@ CHECK (
                     <article class="flow-card"><span class="tag">01 · DB</span><h3>Claim shipment</h3><p>Short transaction changes pending → submitting and commits.</p></article>
                     <article class="flow-card"><span class="tag">02 · HTTP</span><h3>Call provider</h3><p>Outside the transaction, with timeout and stable request key.</p></article>
                     <article class="flow-card"><span class="tag">03 · DB</span><h3>Record response</h3><p>Lock shipment; store accepted, permanently failed, or unknown result.</p></article>
-                    <article class="flow-card"><span class="tag">04 · WEBHOOK</span><h3>Store webhook event (planned)</h3><p>Pending persistence contract: insert the raw callback into shipment_events under UNIQUE(provider, external_event_id). On conflict, reload or claim the event; retry or enqueue processing when processed_at is null, and treat it as a harmless duplicate only after processing completes.</p></article>
+                    <article class="flow-card"><span class="tag">04 · WEBHOOK</span><h3>Store provider webhook receipt</h3><p>Insert the raw callback into provider_webhook_receipts under UNIQUE(provider, external_event_id). On conflict, compare the immutable raw body: reload or claim an identical receipt, retry or enqueue it when processed_at is null, and reject a mismatched body without applying an effect.</p></article>
                     <article class="flow-card"><span class="tag">05 · DB</span><h3>Apply once</h3><p>Lock affected rows, ship packed quantity, append movement, commit.</p></article>
                 </div>
                 <p class="muted" style="margin-top: 18px;">Dispatch follow-up jobs after commit. If delivery to the queue itself must be guaranteed, persist an outbox message in the same transaction and publish it asynchronously.</p>
@@ -1825,7 +1825,7 @@ CHECK (
                     <ul class="clean-list">
                         <li>Use database uniqueness for every operation key.</li>
                         <li>Treat queue uniqueness as an optimization.</li>
-                        <li>Implement the pending shipment_events contract, persist first, and resume any duplicate whose processed_at is null.</li>
+                        <li>Persist ProviderWebhookReceipt first, resume an identical unprocessed duplicate, and reject an identity/body mismatch.</li>
                         <li>Append movement and transition history atomically.</li>
                         <li>Test concurrency against MySQL.</li>
                     </ul>
@@ -2041,8 +2041,8 @@ CHECK (
                 },
                 duplicate: {
                     title: 'Duplicate callback',
-                    copy: 'Pending shipment_events persistence: insert the webhook event first. On UNIQUE(provider, external_event_id) conflict, reload or claim the existing event; retry or enqueue processing when processed_at is null.',
-                    points: ['Acknowledge a duplicate as harmless only after processing completes.', 'Lock shipment state before transition.', 'Do not use tracking number alone as event identity.']
+                    copy: 'Persist ProviderWebhookReceipt first. On UNIQUE(provider, external_event_id) conflict, resume an identical unprocessed receipt and reject a mismatched immutable raw body.',
+                    points: ['Acknowledge an identical duplicate as harmless only after processing completes.', 'Reject identity/body mismatches without a shipment effect.', 'Lock shipment state before transition.']
                 }
             };
 
