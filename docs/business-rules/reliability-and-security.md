@@ -71,7 +71,7 @@ Core recovery paths:
 
 - Outstanding order items are discoverable by the backorder allocator.
 - Pending shipments are discoverable by the shipment command.
-- Uncertain shipment submissions are discoverable by the provider reconciliation command.
+- Uncertain provider submissions are discoverable by the provider-submission reconciliation command.
 - Due and retryable mock-provider webhooks are discoverable by the mock-provider dispatcher.
 - Pending provider webhook receipts are discoverable by the provider-webhook command.
 - Temporary reservations are discoverable by the expiration command.

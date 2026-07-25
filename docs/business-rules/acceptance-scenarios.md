@@ -80,17 +80,19 @@ These scenarios describe observable behavior. They are evidence candidates, not 
 
 ## 11. Partial Shipment
 
-**Given** 6 packed units  
-**When** a shipment containing 4 is confirmed  
-**Then** 4 move from packed to external shipped  
-**And** 2 remain packed  
+**Given** a reservation with 6 packed units<br>
+**When** a shipment item is created for 4 and that complete shipment is confirmed<br>
+**Then** the shipment item's quantity identifies the 4 units assigned from that reservation<br>
+**And** 4 move from packed to external shipped<br>
+**And** 2 remain packed<br>
 **And** the reservation and order item remain partially fulfilled.
 
 ## 12. Provider Timeout
 
 **Given** a packed shipment<br>
 **When** the mock provider accepts it but the submission response times out<br>
-**Then** the shipment becomes uncertain<br>
+**Then** the provider submission becomes uncertain<br>
+**And** the shipment remains pending handoff<br>
 **And** the mock provider retains one external shipment under the stable request key<br>
 **And** packed and on-hand balances remain unchanged<br>
 **And** retry and status lookup use the same provider request key<br>

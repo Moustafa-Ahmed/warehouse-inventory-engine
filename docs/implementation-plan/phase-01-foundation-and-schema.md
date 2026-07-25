@@ -135,7 +135,7 @@ Scope:
 Done when:
 
 - One order can contain multiple products.
-- Order items can later own multiple reservations and shipment items.
+- Order items can later be represented through multiple reservations and shipment items.
 
 ## Commit P1.8 — `feat: add reservations and transition history schema`
 
@@ -155,30 +155,70 @@ Done when:
 - The schema supports future multi-warehouse allocation.
 - Expiring reservations are efficiently queryable.
 
-## Commit P1.9 — `feat: add shipment and provider reliability schema`
+## Commit P1.9 — `feat: add shipment composition schema`
 
 **Priority:** Submission-critical
 
 Scope:
 
 - Add `Shipment`/`shipments` and `ShipmentItem`/`shipment_items`.
-- Add `ProviderSubmission`/`provider_submissions` with stable provider request keys and submission outcomes.
-- Add `MockProviderShipment`/`mock_provider_shipments` with unique request keys, external identities, forced/random scenario metadata, provider status, and lifecycle timestamps.
-- Add `MockProviderWebhook`/`mock_provider_webhooks` with immutable webhook identity/body, delivery schedule, delivery status, attempt count, and safe response/error context.
-- Add `ProviderWebhookReceipt`/`provider_webhook_receipts` with unique provider/external-event identity, raw payload, occurrence time, processing status, and safe error context.
-- Before writing the migrations, define and record the exact persisted values for each table. Keep shipment business state, provider-submission state/outcome, mock-provider shipment state, mock-provider webhook delivery state, and provider-webhook-receipt processing state in separate enums.
-- Do not place delivery progress, provider acceptance, uncertainty, or provider-submission failure into one catch-all shipment status.
-- Add models, relationships, casts, indexes, and factory states.
+- Keep every shipment scoped to one order and warehouse while allowing multiple shipments per order and partial quantities per order item.
+- Persist only `pending_handoff` and `shipped` shipment business states.
+- Make each shipment item reference its source reservation. Reach the order item, product, and warehouse through that reservation rather than storing a duplicate `order_item_id`.
+- Store the shipment item's positive assigned `quantity` and `delivered_quantity`; do not add a duplicate shipped-quantity projection.
+- Enforce that delivered quantity cannot exceed the shipment-item quantity.
+- Keep shipment status and shipment-item delivered quantity out of mass assignment; later transitions update them explicitly through application services.
+- Keep shipment business state separate from provider submission state and delivery progress.
+- Add models, relationships, casts, indexes, and factory states for this concern only.
 
 Done when:
 
 - One order supports multiple warehouse-specific shipments.
-- Provider submissions are distinct from shipment business state.
+- Shipment items identify the exact reservation and packed quantity they represent.
+- The schema supports partial shipment composition without deducting inventory.
+- Delivery progress remains queryable without adding delivery states to the shipment enum.
+- No provider submission, mock-provider, webhook-delivery, or webhook-receipt state is introduced in this commit.
+
+## Commit P1.10 — `feat: add provider submission schema`
+
+**Priority:** Submission-critical
+
+Scope:
+
+- Add `ProviderSubmission`/`provider_submissions` belonging to shipments.
+- Store a unique stable provider request key, submission state/outcome, provider identity where known, safe failure context, and lifecycle timestamps needed for reconciliation.
+- Before writing the migration, define and obtain owner approval for the exact persisted provider-submission states and their allowed meanings.
+- Keep submission preparation, provider acceptance, uncertainty, and permanent-failure meanings separate from shipment business state.
+- Add the model, relationships, casts, indexes, and factory states for provider submissions only.
+
+Done when:
+
+- A shipment can have independently recorded provider submissions without mixing them into shipment status.
+- Stable request keys and provider identities can support idempotent replay and reconciliation.
+- Uncertain and permanently failed submissions are efficiently discoverable.
+- Provider acceptance alone cannot represent shipment confirmation.
+
+## Commit P1.11 — `feat: add mock-provider webhook reliability schema`
+
+**Priority:** Submission-critical
+
+Scope:
+
+- Add `MockProviderShipment`/`mock_provider_shipments` with unique request keys, external identities, forced/random scenario metadata, provider status, and lifecycle timestamps.
+- Add `MockProviderWebhook`/`mock_provider_webhooks` with immutable webhook identity/body, delivery schedule, delivery status, attempt count, and safe response/error context.
+- Add `ProviderWebhookReceipt`/`provider_webhook_receipts` with unique provider/external-event identity, raw payload, occurrence time, processing status, and safe error context.
+- Before writing the migrations, define and obtain owner approval for the exact mock-provider shipment, webhook-delivery, and webhook-receipt processing states.
+- Decide whether an exact replay reuses the existing mock-provider webhook row or requires another persisted record. Preserve one immutable external event identity/body and do not add replay linkage without a demonstrated need.
+- Keep mock-provider shipment state, outbound webhook delivery state, and inbound webhook receipt processing state in separate enums.
+- Add models, relationships, casts, indexes, and factory states.
+
+Done when:
+
 - Mock-provider shipment and webhook state are distinct from provider submissions and provider webhook receipts.
-- Due mock-provider webhooks and uncertain provider submissions are efficiently discoverable.
+- Due mock-provider webhooks and pending provider webhook receipts are efficiently discoverable.
 - Duplicate external event IDs are rejected by the database.
 
-## Commit P1.10 — `feat: seed reference warehouse data`
+## Commit P1.12 — `feat: seed reference warehouse data`
 
 **Priority:** Submission-critical
 

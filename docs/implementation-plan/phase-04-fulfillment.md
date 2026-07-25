@@ -93,7 +93,10 @@ Scope:
 - Require an idempotency key and execute shipment creation through `OperationService`.
 - Require one warehouse per shipment.
 - Support multiple items and partial item quantities.
-- Assign packed quantities to shipment items without deducting warehouse stock.
+- Create each shipment item against one source reservation and store the positive quantity assigned from that reservation.
+- Validate that every source reservation belongs to the shipment's order and warehouse.
+- Leave shipment-item delivered quantity at zero and the shipment in `pending_handoff`.
+- Do not duplicate `order_item_id` or shipped quantity on shipment items.
 - Prevent the same packed quantity from being assigned twice.
 - Add one focused shipment-composition test covering packed-quantity and single-warehouse enforcement.
 
@@ -101,6 +104,7 @@ Done when:
 
 - A shipment cannot contain unpacked or differently warehoused stock.
 - Multiple shipments can safely consume different parts of one order item.
+- Every shipment item traces its assigned packed quantity to one reservation.
 - Shipment creation does not deduct on-hand inventory.
 
 ## Commit P4.6 — `test: prove fulfillment quantity conservation`

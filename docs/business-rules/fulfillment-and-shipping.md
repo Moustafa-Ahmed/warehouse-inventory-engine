@@ -62,12 +62,15 @@ Shipments are created only from packed quantities.
 
 Rules:
 
-- Every shipment belongs to exactly one warehouse.
-- Every shipment item references an order item and positive quantity.
+- Every shipment belongs to exactly one order and warehouse.
+- Every shipment item references its source reservation and a positive quantity.
+- The reservation provides the shipment item's order item, product, and warehouse relationships; `ShipmentItem` does not duplicate `order_item_id`.
+- Every shipment item reservation must belong to the shipment's order and warehouse.
 - One order can have multiple shipments.
-- One order item can be split across shipments.
+- One order item can be represented through multiple reservations and split across shipments.
 - One shipment can contain multiple order items from the same warehouse.
-- Shipment quantity cannot exceed eligible packed quantity.
+- A shipment item's quantity cannot exceed its reservation's packed quantity not already assigned to another pending shipment.
+- A new shipment starts in `pending_handoff`.
 - Creating a shipment does not reduce warehouse on-hand stock.
 
 ## 6. Shipment Submission
@@ -82,6 +85,7 @@ Rules:
 - Provider submissions are recorded independently from the shipment’s business state.
 - A duplicate job must not create another external shipment.
 - An accepted provider response records acceptance only; it does not mark the shipment shipped.
+- Provider submission success, failure, and uncertainty do not replace the shipment's `pending_handoff` state.
 - The shipment is marked shipped only after a valid `shipment.confirmed` webhook is persisted as a `ProviderWebhookReceipt` and processed.
 
 ## 7. Provider Outcomes
@@ -120,13 +124,14 @@ The confirmation transaction:
 
 1. Claims the provider webhook receipt.
 2. Locks the shipment, affected reservations, and inventory balance rows.
-3. Validates the shipment is eligible.
+3. Validates the shipment is `pending_handoff` and the callback confirms the complete composed shipment.
 4. Appends the canonical movement.
 5. Reduces packed projection quantity.
-6. Increases shipped progress on shipment, reservation, and order-item projections.
-7. Appends transition history.
-8. Marks the webhook receipt processed.
-9. Commits atomically.
+6. Increases shipped progress on reservation and order-item projections using each shipment item's quantity.
+7. Marks the shipment `shipped`; `ShipmentItem` does not duplicate shipped quantity.
+8. Appends transition history.
+9. Marks the webhook receipt processed.
+10. Commits atomically.
 
 Repeating confirmation cannot deduct stock twice.
 
@@ -138,9 +143,11 @@ Delivery is a fulfillment event, not a warehouse inventory movement.
 
 Rules:
 
-- Delivered quantity must already be shipped.
+- Delivery can advance only after the shipment is `shipped`.
+- Each shipment item's delivered quantity must remain between zero and its quantity.
 - Delivery may be partial.
 - Duplicate delivery webhooks do not repeat effects.
+- Shipment delivery progress is derived from shipment-item quantities and delivered quantities, not another shipment status.
 - An order becomes delivered only when every shipped quantity is delivered.
 - A delivery failure does not place goods back into warehouse inventory.
 

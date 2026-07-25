@@ -139,14 +139,14 @@ Done when:
 - A permanent rejection is not retried forever.
 - The job and command contain no inventory mutation logic.
 
-## Commit P5.7 — `feat: reconcile uncertain shipment submissions`
+## Commit P5.7 — `feat: reconcile uncertain provider submissions`
 
 **Priority:** Submission-critical
 
 Scope:
 
 - Implement `ShipmentSubmissionService::reconcile()` using provider status lookup and the stable request key.
-- Implement bounded `shipments:reconcile-uncertain` discovery and thin reconciliation jobs.
+- Implement bounded `provider-submissions:reconcile-uncertain` discovery and thin reconciliation jobs.
 - Keep packed and on-hand quantities unchanged while the local outcome is uncertain.
 - Record provider acceptance or rejection without treating status lookup as shipment confirmation.
 - If provider handoff is confirmed but its callback is unacknowledged, make the existing mock-provider confirmation webhook due for redelivery.
@@ -168,7 +168,9 @@ Scope:
 - Implement shipment confirmation through `ShipmentService::confirmHandoff()`.
 - Extend the operation-type enum with shipment confirmation here, where the persisted provider webhook receipt and shipment service consume it.
 - Lock shipment, reservation, shipment-item, and balance records in deterministic order.
-- Move packed stock to external/shipped exactly once.
+- Require the callback to confirm the complete composed shipment.
+- Move every shipment item's full quantity from packed to external/shipped exactly once.
+- Mark the shipment `shipped` without adding a shipment-item shipped-quantity projection.
 - Update shipment, reservation, order item, operation, movement, history, and provider webhook receipt in one transaction.
 - Implement `ProviderWebhookService` to classify and route persisted receipts, with `ProcessProviderWebhookJob` as its thin queued adapter.
 - Add critical duplicate-confirmation, rollback, and worker-retry scenarios.
@@ -176,7 +178,7 @@ Scope:
 Done when:
 
 - Repeating shipment confirmation cannot deduct packed stock twice.
-- A crash cannot persist a partially confirmed shipment.
+- A crash cannot persist only part of the shipment-confirmation transaction.
 - The job contains no duplicate state-transition implementation and delegates to the service layer.
 
 ## Commit P5.9 — `feat: apply delivery confirmations idempotently`
@@ -187,7 +189,8 @@ Scope:
 
 - Implement delivery confirmation through `ShipmentService::confirmDelivery()`.
 - Extend the operation-type enum with delivery confirmation here; the persisted provider webhook receipt supplies the stable identity for the central operation record.
-- Apply partial and complete delivery progress only to shipped quantities.
+- Require a `shipped` shipment and apply partial or complete delivery progress to each shipment item's `delivered_quantity`.
+- Prevent delivered quantity from exceeding the shipment item's quantity.
 - Do not modify warehouse balance projections.
 - Recalculate progress through the shared calculator.
 - Keep delivery progress separate from shipment and provider-submission statuses; do not duplicate delivery labels inside those enums.

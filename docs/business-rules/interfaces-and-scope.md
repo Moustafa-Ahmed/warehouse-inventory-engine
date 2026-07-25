@@ -142,7 +142,7 @@ mock-provider:replay-webhook
 Provider recovery commands:
 
 ```text
-shipments:reconcile-uncertain
+provider-submissions:reconcile-uncertain
 mock-provider:dispatch-pending
 ```
 
@@ -160,7 +160,7 @@ Planned jobs:
 
 - Allocate an outstanding order item after stock receipt.
 - Submit a shipment through the provider.
-- Reconcile an uncertain shipment by stable provider request key.
+- Reconcile an uncertain provider submission by stable provider request key.
 - Process a persisted provider webhook receipt.
 - Deliver a persisted mock-provider callback over signed HTTP.
 
@@ -171,7 +171,7 @@ Every job is idempotent and may execute more than once.
 Core schedules:
 
 - Process pending shipments.
-- Reconcile uncertain shipment submissions.
+- Reconcile uncertain provider submissions.
 - Deliver due and retryable mock-provider webhooks.
 - Expire temporary reservations.
 - Process pending provider webhook receipts.
