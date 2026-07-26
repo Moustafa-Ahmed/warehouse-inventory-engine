@@ -9,4 +9,5 @@ enum Type: string
     case TransferStock = 'transfer_stock';
     case CreateOrder = 'create_order';
     case ReserveOrderItem = 'reserve_order_item';
+    case ReleaseReservation = 'release_reservation';
 }
