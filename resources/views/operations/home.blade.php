@@ -14,6 +14,18 @@
         <div class="col-12 col-md-6 col-xl-4">
             <section class="card h-100 border-0 shadow-sm">
                 <div class="card-body">
+                    <h2 class="h5 card-title">Inventory balances</h2>
+                    <p class="card-text text-body-secondary">
+                        Inspect warehouse inventory buckets, recent movements, adjustments, and transfers.
+                    </p>
+                    <a class="btn btn-primary" href="{{ route('inventory.balances.index') }}">View inventory</a>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-4">
+            <section class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
                     <h2 class="h5 card-title">Receive stock</h2>
                     <p class="card-text text-body-secondary">
                         Record an external stock receipt and inspect its stored operation result.
