@@ -34,5 +34,17 @@
                 </div>
             </section>
         </div>
+
+        <div class="col-12 col-md-6 col-xl-4">
+            <section class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="h5 card-title">Orders and reservations</h2>
+                    <p class="card-text text-body-secondary">
+                        Create demand, inspect explicit progress quantities, and allocate warehouse inventory.
+                    </p>
+                    <a class="btn btn-primary" href="{{ route('orders.index') }}">View orders</a>
+                </div>
+            </section>
+        </div>
     </div>
 </x-layouts.app>

@@ -5,6 +5,9 @@ use App\Http\Controllers\InventoryAdjustmentController;
 use App\Http\Controllers\InventoryBalanceController;
 use App\Http\Controllers\InventoryReceiptController;
 use App\Http\Controllers\InventoryTransferController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderItemController;
+use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ShippingProviderWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,4 +39,24 @@ Route::middleware(['auth', 'can:operate'])->group(function (): void {
         ->name('inventory.receipts.create');
     Route::post('/inventory/receipts', [InventoryReceiptController::class, 'store'])
         ->name('inventory.receipts.store');
+
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::patch('/orders/{order}/items/{item}', [OrderItemController::class, 'update'])
+        ->scopeBindings()
+        ->name('orders.items.update');
+    Route::post('/orders/{order}/items/{item}/reservations', [ReservationController::class, 'store'])
+        ->scopeBindings()
+        ->name('orders.items.reservations.store');
+
+    Route::get('/reservations/{reservation}', [ReservationController::class, 'show'])
+        ->name('reservations.show');
+    Route::post('/reservations/{reservation}/confirmation', [ReservationController::class, 'confirm'])
+        ->name('reservations.confirm');
+    Route::post('/reservations/{reservation}/release', [ReservationController::class, 'release'])
+        ->name('reservations.release');
+    Route::post('/reservations/{reservation}/allocation', [ReservationController::class, 'allocate'])
+        ->name('reservations.allocate');
 });
