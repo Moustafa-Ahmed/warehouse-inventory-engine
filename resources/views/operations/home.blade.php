@@ -9,6 +9,7 @@
     <main>
         <h1>Warehouse operations</h1>
         <p>Signed in as {{ auth()->user()->name }}.</p>
+        <p><a href="{{ route('inventory.receipts.create') }}">Receive stock</a></p>
 
         <form method="post" action="{{ route('logout') }}">
             @csrf
