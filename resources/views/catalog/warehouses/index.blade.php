@@ -28,7 +28,11 @@
                         <tr>
                             <td><strong>{{ $warehouse->code }}</strong></td>
                             <td>{{ $warehouse->name }}</td>
-                            <td><x-ui.badge :value="$warehouse->is_active ? 'active' : 'inactive'" /></td>
+                            <td>
+                                <x-ui.badge :variant="$warehouse->is_active ? 'success' : 'secondary'">
+                                    {{ $warehouse->is_active ? 'Active' : 'Inactive' }}
+                                </x-ui.badge>
+                            </td>
                             <td class="text-end">
                                 <a class="btn btn-sm btn-outline-primary" href="{{ route('warehouses.edit', $warehouse) }}">Edit</a>
                             </td>

@@ -63,6 +63,13 @@ it('lets the administrator create edit and deactivate catalog records', function
 
     expect($warehouse->refresh()->name)->toBe('Updated catalog warehouse')
         ->and($warehouse->is_active)->toBeFalse();
+
+    $this->get(route('products.index'))
+        ->assertSuccessful()
+        ->assertSee('Inactive');
+    $this->get(route('warehouses.index'))
+        ->assertSuccessful()
+        ->assertSee('Inactive');
 });
 
 it('authorizes catalog forms and validates unique identifiers', function () {

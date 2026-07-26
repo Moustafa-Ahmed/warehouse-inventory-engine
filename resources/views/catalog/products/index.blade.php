@@ -28,7 +28,11 @@
                         <tr>
                             <td><strong>{{ $product->sku }}</strong></td>
                             <td>{{ $product->name }}</td>
-                            <td><x-ui.badge :value="$product->is_active ? 'active' : 'inactive'" /></td>
+                            <td>
+                                <x-ui.badge :variant="$product->is_active ? 'success' : 'secondary'">
+                                    {{ $product->is_active ? 'Active' : 'Inactive' }}
+                                </x-ui.badge>
+                            </td>
                             <td class="text-end">
                                 <a class="btn btn-sm btn-outline-primary" href="{{ route('products.edit', $product) }}">Edit</a>
                             </td>
