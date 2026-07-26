@@ -4,7 +4,7 @@ use App\Contracts\ShippingProvider;
 use App\Models\MockProviderWebhook;
 use App\Models\ProviderWebhookReceipt;
 use App\Models\ShipmentItem;
-use App\Services\Shipping\InMemoryProvider;
+use App\Services\Shipping\PersistentMockProvider;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -27,7 +27,7 @@ it('boots against the isolated MySQL test database', function () {
         ->and(Schema::hasTable('mock_provider_shipments'))->toBeTrue()
         ->and(Schema::hasTable('mock_provider_webhooks'))->toBeTrue()
         ->and(Schema::hasTable('provider_webhook_receipts'))->toBeTrue()
-        ->and($this->app->make(ShippingProvider::class))->toBeInstanceOf(InMemoryProvider::class);
+        ->and($this->app->make(ShippingProvider::class))->toBeInstanceOf(PersistentMockProvider::class);
 
     $mockProviderWebhook = MockProviderWebhook::factory()->create();
     $providerWebhookReceipt = ProviderWebhookReceipt::factory()->create();

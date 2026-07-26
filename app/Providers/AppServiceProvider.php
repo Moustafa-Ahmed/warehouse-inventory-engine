@@ -3,8 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\ShippingProvider;
-use App\Enums\Shipping\Scenario;
-use App\Services\Shipping\InMemoryProvider;
+use App\Services\Shipping\PersistentMockProvider;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,7 +13,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(ShippingProvider::class, fn (): InMemoryProvider => new InMemoryProvider(Scenario::ImmediateSuccess));
+        $this->app->singleton(ShippingProvider::class, PersistentMockProvider::class);
     }
 
     /**

@@ -4,10 +4,12 @@ namespace App\Services\Shipping;
 
 use App\DTOs\Shipping\PreparedSubmission;
 use App\DTOs\Shipping\Request;
+use App\DTOs\Shipping\RequestItem;
 use App\Enums\ProviderSubmissions\Status as ProviderSubmissionStatus;
 use App\Enums\Shipments\Status as ShipmentStatus;
 use App\Models\ProviderSubmission;
 use App\Models\Shipment;
+use App\Models\ShipmentItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -32,7 +34,11 @@ final class ShipmentSubmissionService
             throw new InvalidArgumentException('Only shipments pending handoff can be submitted.');
         }
 
-        if (! $shipment->items()->exists()) {
+        $shipmentItems = $shipment->items()
+            ->orderBy('id')
+            ->get();
+
+        if ($shipmentItems->isEmpty()) {
             throw new InvalidArgumentException('A shipment must contain packed items before submission.');
         }
 
@@ -57,6 +63,12 @@ final class ShipmentSubmissionService
             providerRequest: new Request(
                 providerRequestKey: $submission->provider_request_key,
                 shipmentReference: (string) $shipment->id,
+                items: $shipmentItems
+                    ->map(fn (ShipmentItem $item): RequestItem => new RequestItem(
+                        shipmentItemId: $item->id,
+                        quantity: $item->quantity,
+                    ))
+                    ->all(),
             ),
         );
     }
