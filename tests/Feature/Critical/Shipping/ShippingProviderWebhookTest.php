@@ -3,6 +3,7 @@
 use App\Enums\ProviderWebhookReceipts\Status;
 use App\Models\ProviderWebhookReceipt;
 use App\Services\Shipping\WebhookSignature;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 
 it('secures and deduplicates the provider webhook boundary', function (
@@ -10,6 +11,7 @@ it('secures and deduplicates the provider webhook boundary', function (
     int $expectedStatus,
     int $expectedReceiptCount,
 ) {
+    Queue::fake();
     config()->set('shipping.webhook.providers.mock.secret', 'test-webhook-secret');
     config()->set('shipping.webhook.replay_window_seconds', 300);
     $eventId = 'provider-event-'.$case;

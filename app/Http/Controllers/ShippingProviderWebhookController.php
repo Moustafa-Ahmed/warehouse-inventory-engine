@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\WebhookIdentityConflictException;
 use App\Http\Requests\ShippingProviderWebhookRequest;
+use App\Jobs\ProcessProviderWebhookJob;
 use App\Services\Shipping\WebhookReceiptService;
 use Illuminate\Http\JsonResponse;
 
@@ -19,6 +20,10 @@ class ShippingProviderWebhookController extends Controller
             return response()->json([
                 'message' => $exception->getMessage(),
             ], 409);
+        }
+
+        if ($result->requiresProcessing) {
+            ProcessProviderWebhookJob::dispatch($result->receiptId);
         }
 
         return response()->json([
