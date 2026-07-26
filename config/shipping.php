@@ -3,6 +3,17 @@
 use App\Enums\Shipping\Scenario;
 
 return [
+    'webhook' => [
+        'replay_window_seconds' => (int) env('SHIPPING_WEBHOOK_REPLAY_WINDOW_SECONDS', 300),
+        'rate_limit_per_minute' => (int) env('SHIPPING_WEBHOOK_RATE_LIMIT_PER_MINUTE', 120),
+
+        'providers' => [
+            'mock' => [
+                'secret' => env('MOCK_PROVIDER_WEBHOOK_SECRET'),
+            ],
+        ],
+    ],
+
     'mock_provider' => [
         'callback_delay_seconds' => (int) env('MOCK_PROVIDER_CALLBACK_DELAY_SECONDS', 60),
 
