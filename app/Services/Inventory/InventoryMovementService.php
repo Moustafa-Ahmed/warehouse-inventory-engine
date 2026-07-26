@@ -50,11 +50,13 @@ final class InventoryMovementService
             throw new InvalidArgumentException('Movement quantity must be positive.');
         }
 
-        $sourceExists = $movement->sourceWarehouseId !== null || $movement->sourceBucket !== null;
-        $destinationExists = $movement->destinationWarehouseId !== null || $movement->destinationBucket !== null;
-
-        if (! $sourceExists && ! $destinationExists) {
-            throw new InvalidArgumentException('An inventory movement requires at least one endpoint.');
+        if (
+            $movement->sourceWarehouseId === null
+            && $movement->destinationWarehouseId === null
+        ) {
+            throw new InvalidArgumentException(
+                'An inventory movement requires at least one warehouse endpoint.'
+            );
         }
 
         $this->validateWarehouseEndpoint(

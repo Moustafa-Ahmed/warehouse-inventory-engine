@@ -9,6 +9,7 @@ use App\Models\Operation;
 use App\Models\Product;
 use App\Models\Warehouse;
 use App\Services\Inventory\InventoryMovementService;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -261,3 +262,63 @@ it('locks every affected balance in ascending balance id order', function () {
         ->and($sourceBalance->refresh()->available_quantity)->toBe(3)
         ->and($destinationBalance->refresh()->available_quantity)->toBe(2);
 });
+
+it('requires at least one warehouse endpoint', function () {
+    $service = app(InventoryMovementService::class);
+    $product = Product::factory()->create();
+
+    expect(fn () => DB::transaction(
+        fn (): InventoryMovement => $service->apply(
+            Operation::factory()->create(),
+            new Movement(
+                productId: $product->id,
+                quantity: 1,
+                sourceWarehouseId: null,
+                sourceBucket: null,
+                destinationWarehouseId: null,
+                destinationBucket: MovementBucket::Shipped,
+                businessReferenceType: 'invalid_external_movement',
+                businessReferenceId: 'invalid-external-movement',
+            ),
+        ),
+    ))->toThrow(
+        InvalidArgumentException::class,
+        'An inventory movement requires at least one warehouse endpoint.',
+    );
+});
+
+it('rejects malformed movement endpoints at the database boundary', function (
+    ?string $sourceWarehouse,
+    ?string $sourceBucket,
+    ?string $destinationWarehouse,
+    ?string $destinationBucket,
+) {
+    $operation = Operation::factory()->create();
+    $product = Product::factory()->create();
+    $warehouse = Warehouse::factory()->create();
+
+    expect(fn () => DB::table('inventory_movements')->insert([
+        'operation_id' => $operation->id,
+        'product_id' => $product->id,
+        'source_warehouse_id' => $sourceWarehouse === 'warehouse'
+            ? $warehouse->id
+            : null,
+        'source_bucket' => $sourceBucket,
+        'destination_warehouse_id' => $destinationWarehouse === 'warehouse'
+            ? $warehouse->id
+            : null,
+        'destination_bucket' => $destinationBucket,
+        'quantity' => 1,
+        'business_reference_type' => 'database_constraint_test',
+        'business_reference_id' => (string) Str::uuid(),
+        'created_at' => now(),
+    ]))->toThrow(QueryException::class);
+})->with([
+    'source warehouse without bucket' => ['warehouse', null, null, null],
+    'source shipped bucket inside warehouse' => ['warehouse', 'shipped', null, null],
+    'destination warehouse without bucket' => [null, null, 'warehouse', null],
+    'destination mutable bucket without warehouse' => [null, null, null, 'available'],
+    'destination shipped bucket inside warehouse' => [null, null, 'warehouse', 'shipped'],
+    'external source to external shipped destination' => [null, null, null, 'shipped'],
+    'no endpoint' => [null, null, null, null],
+]);

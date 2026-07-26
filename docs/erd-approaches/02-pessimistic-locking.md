@@ -1,150 +1,200 @@
-# Approach 2 — Pessimistic Locking & State Machine
+# Selected Approach — Pessimistic Locking with a Movement Ledger
+
+## Document Status
+
+This is the implemented summary of the selected approach. The [interactive presentation](02-pessimistic-locking-presentation.html) and [Excalidraw file](02-pessimistic-locking.excalidraw) were created during design exploration; they explain the approach but are not the final schema contract.
+
+For the complete implemented schema, services, provider flow, trade-offs, and test evidence, read [System Architecture](../ARCHITECTURE.md).
 
 ## Core Idea
 
-Inventory records are locked at the database level using `SELECT ... FOR UPDATE` within short-lived transactions. While a transaction holds the lock, no other transaction can read or write those rows. A **strict state machine** governs valid transitions for inventory and reservations, making invalid states impossible by design.
+Inventory decisions run in short MySQL transactions. Each transaction locks the affected `inventory_balances` rows with `SELECT ... FOR UPDATE`, rereads their current quantities, validates the source bucket, appends an `inventory_movement`, and applies the same movement to the balance projection before commit.
 
-This is the most conservative approach — it prioritises correctness over throughput.
+Ordinary non-locking reads can continue through MySQL's MVCC behavior. Competing writers for the same product/warehouse balance wait and then make their decisions from the committed result rather than from the same stale quantity.
 
----
+This favors a clear correctness proof over maximum write throughput for one hot stock key.
 
-## Database Schema
-
-> 🎨 **Visual ERD diagram available in:** [`02-pessimistic-locking.excalidraw`](./02-pessimistic-locking.excalidraw)
-> Open this file in VS Code with the **Excalidraw** extension to see the full interactive ERD with all tables, fields, and relationships.
-
----
-
-## State Machine
-
-### Reservation Status Flow
+## Implemented Data Shape
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f4f5f7', 'primaryBorderColor':'#2d3748', 'lineColor':'#4a5568', 'secondaryColor':'#edf2f7', 'tertiaryColor':'#ffffff', 'background':'#ffffff'}}}%%
-stateDiagram-v2
-    [*] --> active : Created
-    active --> partially_picked : Partial pick
-    active --> picked : Full pick
-    partially_picked --> picked : Remaining picked
-    partially_picked --> released : Cancelled remainder
-    active --> released : Cancelled
-    picked --> shipped : Shipment confirmed
-    active --> expired : Timeout
-    partially_picked --> expired : Timeout on remainder
-    shipped --> [*]
-    released --> [*]
-    expired --> [*]
+erDiagram
+    PRODUCTS ||--o{ INVENTORY_BALANCES : has
+    WAREHOUSES ||--o{ INVENTORY_BALANCES : holds
+    OPERATIONS ||--o{ INVENTORY_MOVEMENTS : owns
+    PRODUCTS ||--o{ INVENTORY_MOVEMENTS : moves
+    ORDERS ||--|{ ORDER_ITEMS : contains
+    ORDER_ITEMS ||--o{ RESERVATIONS : allocates
+    WAREHOUSES ||--o{ RESERVATIONS : scopes
+    RESERVATIONS ||--o{ RESERVATION_TRANSITIONS : audits
+    ORDERS ||--o{ SHIPMENTS : dispatches
+    SHIPMENTS ||--|{ SHIPMENT_ITEMS : contains
+    RESERVATIONS ||--o{ SHIPMENT_ITEMS : supplies
+    SHIPMENTS ||--o{ PROVIDER_SUBMISSIONS : submits
+
+    INVENTORY_BALANCES {
+        bigint product_id
+        bigint warehouse_id
+        uint available_quantity
+        uint reserved_quantity
+        uint picked_quantity
+        uint packed_quantity
+    }
+
+    INVENTORY_MOVEMENTS {
+        bigint operation_id
+        bigint product_id
+        bigint source_warehouse_id
+        enum source_bucket
+        bigint destination_warehouse_id
+        enum destination_bucket
+        uint quantity
+        string business_reference
+    }
+
+    RESERVATIONS {
+        bigint order_item_id
+        bigint warehouse_id
+        enum kind
+        enum status
+        uint requested_quantity
+        uint reserved_quantity
+        uint picked_quantity
+        uint packed_quantity
+        uint shipped_quantity
+        uint released_quantity
+    }
+
+    SHIPMENTS {
+        bigint order_id
+        bigint warehouse_id
+        enum status
+        timestamp shipped_at
+    }
 ```
 
-### Explicitly disallowed transitions (enforced by CHECK / application logic):
+One balance exists per `(product_id, warehouse_id)`. Its mutually exclusive physical buckets are:
 
-- `active → shipped` (must go through `picked` first)
-- `released → active` (released is terminal)
-- `shipped → picked` (no reversal after shipment)
+```text
+available + reserved + picked + packed = on hand
+```
 
----
+Shipped goods have left the warehouse. `shipped` is therefore an external movement destination, not a mutable balance bucket. Delivered quantity is cumulative progress inside shipped quantity and is not an inventory movement.
 
-## Reservation Flow (Atomic)
+## Actual Reservation and Fulfillment States
+
+Reservations have:
+
+- Kind: `temporary` or `confirmed`.
+- Status: `open`, `released`, `expired`, or `closed`.
+- Current physical quantities: reserved, picked, packed, shipped, and released.
+
+The physical flow is:
+
+```text
+External -> Available -> Reserved -> Picked -> Packed -> External/Shipped
+```
+
+Temporary reservations may be confirmed or expire. Confirmed reservations do not expire automatically. Picked and packed inventory must use explicit physical reversal operations before it becomes available again.
+
+The system does not persist `active`, `partially_picked`, or separate delivery/shipment-progress statuses. Progress is derived from explicit quantities.
+
+## Atomic Reservation Flow
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#f4f5f7', 'primaryBorderColor':'#2d3748', 'lineColor':'#4a5568', 'secondaryColor':'#edf2f7', 'tertiaryColor':'#ffffff', 'background':'#ffffff'}}}%%
 sequenceDiagram
-    participant Client
-    participant App
-    participant DB
+    participant Entry as Controller / Command / Job
+    participant Reservations as ReservationService
+    participant Operation as OperationService
+    participant Movement as InventoryMovementService
+    participant DB as MySQL
 
-    Client->>App: Reserve(product, warehouse, qty)
-    App->>DB: BEGIN TRANSACTION
-    App->>DB: SELECT quantity, reserved_quantity FROM inventory WHERE ... FOR UPDATE
-    DB-->>App: qty=20, reserved=10
-    App->>App: Check (quantity - reserved) >= requested
-    App->>DB: UPDATE inventory SET reserved_quantity = reserved_quantity + ? WHERE id = ?
-    App->>DB: INSERT INTO reservations (...) VALUES (...) RETURNING id
-    App->>DB: INSERT INTO inventory_movements (...)
-    App->>DB: COMMIT
-    App-->>Client: Reservation(id, status=active)
-
-    alt Insufficient stock
-        App->>DB: ROLLBACK
-        App-->>Client: Error("Insufficient stock")
+    Entry->>Reservations: reserve typed input
+    Reservations->>DB: BEGIN
+    Reservations->>Operation: claim idempotency key + request hash
+    Operation->>DB: insert operation or lock existing key
+    alt matching completed replay
+        Operation-->>Reservations: original result
+    else first execution
+        Reservations->>Movement: Available -> Reserved
+        Movement->>DB: create balance if absent
+        Movement->>DB: lock balance rows by ascending ID
+        Movement->>DB: reread and allocate min(requested, available)
+        Movement->>DB: append movement and update balance
+        Reservations->>DB: update order/reservation and append transition
+        Operation->>DB: store requested, allocated, outstanding result
     end
-
-    alt Deadlock detected
-        DB-->>App: Deadlock victim error
-        App->>App: Retry with backoff (up to 3 tries)
-    end
+    Reservations->>DB: COMMIT
+    Reservations-->>Entry: original or new partial result
 ```
 
----
+Partial allocation is valid. If 10 units are requested and only 6 are available, the result says:
 
-## Key Design Decisions
-
-### `inventory` — Multi-Column Running Totals
-
-Instead of a single `quantity` column, we track each stage separately:
-
-```sql
-CHECK (quantity >= 0),
-CHECK (reserved_quantity >= 0),
-CHECK (picked_quantity >= 0),
-CHECK (shipped_quantity >= 0),
-CHECK (reserved_quantity <= quantity),
-CHECK (picked_quantity <= reserved_quantity),
-CHECK (shipped_quantity <= picked_quantity)
+```text
+requested = 10
+allocated = 6
+outstanding = 4
 ```
 
-These `CHECK` constraints make it **impossible** for inventory to become inconsistent at the SQL level.
+The remaining four stay discoverable for allocation after a stock receipt or by the scheduled backorder command.
 
-### `SELECT ... FOR UPDATE` — Lock Ordering
+## Lock Ordering and Transaction Boundary
 
-All transactions that touch inventory must lock rows in **product_id, warehouse_id** order to prevent deadlocks. A centralised `InventoryLockService` enforces this ordering.
+- Every affected balance is resolved before the lock query.
+- Balance rows are locked in ascending primary-key order.
+- Reservations, order items, shipments, and shipment items are also queried in deterministic order where a workflow touches several rows.
+- Laravel retries selected database transactions up to three times for transient deadlocks.
+- External provider HTTP calls never run while inventory locks are held.
+- An exception rolls back operation state, movement history, projection updates, and lifecycle history together.
 
-### Short-Lived Transactions
+There is no separate `InventoryLockService`. Lock ownership remains in the application service that owns the transaction and in the focused `InventoryMovementService`.
 
-Transactions are kept under 200ms. Any operation expected to take longer (e.g., external API calls) is **moved outside the transaction** — the transaction only covers the database state change.
+## Idempotency and Duplicate Processing
 
-### Deadlock Handling
+The central `operations` table has a globally unique operation key, operation type, canonical SHA-256 request hash, status, and original result.
 
-The application catches deadlock errors (MySQL `1213`, PostgreSQL `40P01`) and retries up to 3 times with exponential backoff.
+- Same key, type, and payload returns the stored result.
+- Same key with changed input is a conflict.
+- Concurrent use of one key is resolved by the database unique constraint.
+- A rolled-back transaction leaves no completed operation.
 
----
+Provider calls use a different stable `provider_request_key`. Provider callbacks use unique `(provider, external_event_id)` receipt identity plus exact raw-body comparison. These keys solve different retry boundaries and are intentionally not conflated.
 
-## Handling Concurrency & Edge Cases
+## Shipping Boundary
 
-| Scenario                               | How It's Handled                                                                                                            |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **Two users reserve last item**        | Second `SELECT FOR UPDATE` blocks until first transaction commits. After commit, second re-reads and finds `available = 0`. |
-| **Duplicate reservation command**      | Unique constraint on `(order_id, product_id, warehouse_id)` in `reservations`. Second insert fails.                         |
-| **Deadlock between concurrent orders** | Caught at DB driver level. Retried with exponential backoff. Lock ordering minimises occurrence.                            |
-| **Worker crash mid-transaction**       | DB auto-rollback. No partial state.                                                                                         |
-| **Duplicate shipment webhook**         | `tracking_number` unique constraint. Idempotency check before processing.                                                   |
-| **Overselling prevention**             | `CHECK (reserved_quantity <= quantity)` constraint — a physical guarantee.                                                  |
-| **Warehouse transfer while reserved**  | Application blocks transfer if `reserved_quantity > 0`. Admin override requires releasing first.                            |
+Shipment creation and provider acceptance do not deduct inventory. A shipment remains `pending_handoff` until a valid signed `shipment.confirmed` callback is persisted and processed.
 
----
+That confirmation atomically moves:
 
-## Assumptions & Trade-offs
+```text
+Warehouse / Packed -> External / Shipped
+```
 
-### Assumptions
+A duplicate confirmation cannot repeat the movement. An out-of-order delivery receipt remains pending until handoff exists. Provider status reconciliation can request callback redelivery but cannot mark inventory shipped directly.
 
-1. **Short transactions are possible.** All business logic for a reservation completes in < 200ms.
-2. **Lock contention is manageable.** Peak concurrency per product/warehouse is < 50 simultaneous writers.
-3. **Database is a single primary.** Pessimistic locking requires a single write master — read replicas cannot participate.
-4. **Pick/pack/ship follows the state machine.** Operators progress through the defined stages in order.
+## Concurrency and Failure Scenarios
 
-### Trade-offs
+| Scenario | Implemented protection |
+| --- | --- |
+| Two requests reserve the final unit | The second writer waits for the locked balance, rereads zero available, and receives a zero-allocation result. |
+| Opposite-direction transfers | Both transactions lock balance IDs in the same order. |
+| Duplicate browser or command request | The operation key returns the original stored result. |
+| Same key with changed payload | Canonical request-hash comparison rejects the conflict. |
+| Failure after movement append | The caller transaction rolls back movement, projection, transition, and operation together. |
+| Provider acceptance or timeout | Packed stock remains unchanged. |
+| Duplicate callback | Unique receipt identity and idempotent processing prevent another movement. |
+| Out-of-order delivery | The durable receipt waits for shipment confirmation. |
+| Worker stops after persisted state | Scheduled sweepers rediscover pending work. |
 
-| Pro                                              | Con                                                  |
-| ------------------------------------------------ | ---------------------------------------------------- |
-| Strongest consistency — impossible to oversell   | Row locks reduce throughput under high concurrency   |
-| No application retry logic for version conflicts | Deadlocks possible (though manageable)               |
-| State machine makes invalid states impossible    | Requires a single write database (no multi-master)   |
-| Intuitive to reason about                        | Read scalability limited (FOR UPDATE blocks readers) |
+The focused proof is mapped in [Testing Evidence](../testing-evidence.md).
 
-### When to Choose This Approach
+## Trade-offs
 
-- Inventory value is high and overselling is catastrophic.
-- You have moderate write concurrency and short transactions.
-- Your database is a single primary (or you use a distributed lock manager).
-- You need CHECK-level guarantees, not just application-level checks.
-- Compliance requirements demand provable consistency.
+| Benefit | Cost |
+| --- | --- |
+| Simple final-unit correctness argument | Writers for one hot balance serialize. |
+| Atomic ledger, projections, history, and idempotency | Transactions must remain short and consistently ordered. |
+| Partial allocation is deterministic after the lock | Lock waits and deadlocks must be observable and retried carefully. |
+| MySQL constraints protect core stored invariants | The design assumes one primary write authority. |
+| Easy operational reads from balance projections | The append-only ledger needs archival or partitioning at very high volume. |
+
+Before changing the consistency model, production scaling should measure hot keys, lock waits, deadlocks, query latency, and queue lag. Likely first steps are shorter transactions, batched recovery claims, movement-history partitioning, reporting replicas/projections, and selective per-SKU serialization—not automatic event sourcing.

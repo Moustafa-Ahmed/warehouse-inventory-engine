@@ -65,7 +65,7 @@ available + reserved + picked + packed = on hand
 
 `shipped` is allowed only as an external movement-endpoint classification. It is not a warehouse balance column because the goods have left the warehouse.
 
-The application service requires each warehouse endpoint to have a mutable bucket, permits a null external endpoint, permits `shipped` only as the external destination, and rejects a movement with no endpoint. The database independently enforces foreign keys, allowed bucket strings, and positive quantities. The endpoint-pair rule is currently an application-level invariant and is listed as a hardening gap below.
+The application service requires each warehouse endpoint to have a mutable bucket, permits a null external endpoint, permits `shipped` only as the external destination, and requires at least one warehouse side so a movement cannot have zero projection effect. MySQL check constraints mirror those endpoint-shape rules and independently enforce positive quantities; enum columns and foreign keys protect the remaining endpoint values and references.
 
 ### Orders and fulfillment
 
@@ -340,7 +340,7 @@ For millions of inventory transactions, the next measured steps would be:
 
 Multi-primary inventory writes and distributed reservation consensus are intentionally not proposed without a demonstrated requirement; they would materially change the consistency model.
 
-## 13. Deferred, Omitted, and Known Gaps
+## 13. Deferred and Omitted Work
 
 ### Deferred
 
@@ -358,10 +358,6 @@ Multi-primary inventory writes and distributed reservation consensus are intenti
 - Bins, lots, serial numbers, FIFO/FEFO, and expiry tracking.
 - Multi-tenancy and multi-role authorization.
 - Event sourcing and distributed databases.
-
-### Known hardening gap
-
-- The inventory movement warehouse/bucket endpoint-pair invariant is enforced by `InventoryMovementService`, but the migration does not yet duplicate that complete rule as a database check constraint. All implemented writers use the service; adding the check would protect against future direct SQL or alternative writers.
 
 ## 14. Guarantee-to-Evidence Map
 

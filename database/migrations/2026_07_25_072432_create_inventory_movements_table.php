@@ -32,6 +32,42 @@ return new class extends Migration
         });
 
         DB::statement('ALTER TABLE inventory_movements ADD CONSTRAINT inventory_movements_quantity_positive CHECK (quantity > 0)');
+        DB::statement(
+            "ALTER TABLE inventory_movements
+            ADD CONSTRAINT inventory_movements_source_endpoint_valid
+            CHECK (
+                (source_warehouse_id IS NULL AND source_bucket IS NULL)
+                OR (
+                    source_warehouse_id IS NOT NULL
+                    AND source_bucket IS NOT NULL
+                    AND source_bucket IN ('available', 'reserved', 'picked', 'packed')
+                )
+            )"
+        );
+        DB::statement(
+            "ALTER TABLE inventory_movements
+            ADD CONSTRAINT inventory_movements_destination_endpoint_valid
+            CHECK (
+                (destination_warehouse_id IS NULL AND destination_bucket IS NULL)
+                OR (
+                    destination_warehouse_id IS NOT NULL
+                    AND destination_bucket IS NOT NULL
+                    AND destination_bucket IN ('available', 'reserved', 'picked', 'packed')
+                )
+                OR (
+                    destination_warehouse_id IS NULL
+                    AND destination_bucket = 'shipped'
+                )
+            )"
+        );
+        DB::statement(
+            'ALTER TABLE inventory_movements
+            ADD CONSTRAINT inventory_movements_endpoint_required
+            CHECK (
+                source_warehouse_id IS NOT NULL
+                OR destination_warehouse_id IS NOT NULL
+            )'
+        );
     }
 
     /**
