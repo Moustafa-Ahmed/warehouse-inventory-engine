@@ -127,9 +127,9 @@ Done when:
 
 ## Phase Gate
 
-- [ ] Pick and pack service methods use the movement service and shared progress calculator
-- [ ] Supporting return and unpack work is complete or explicitly recorded for the post-Phase-5 time review
-- [ ] Shipment preparation supports partial quantities without inventory deduction
-- [ ] Cross-warehouse and duplicate packed-quantity assignment are rejected
-- [ ] Conservation tests cover the representative normal and reversal flow
-- [ ] Smoke, focused lifecycle, and calculator tests plus Pint pass
+- [x] Pick and pack service methods use the movement service and shared progress calculator
+- [x] Supporting return and unpack work is complete or explicitly recorded for the post-Phase-5 time review
+- [x] Shipment preparation supports partial quantities without inventory deduction
+- [x] Cross-warehouse and duplicate packed-quantity assignment are rejected
+- [x] Conservation tests cover the representative normal and reversal flow
+- [x] Smoke, focused lifecycle, and calculator tests plus Pint pass

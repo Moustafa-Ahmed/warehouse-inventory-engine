@@ -118,7 +118,7 @@ Do not begin it unless:
 - [x] Phase 1 gate passed
 - [x] Phase 2 gate passed
 - [x] Phase 3 gate passed
-- [ ] Phase 4 gate passed
+- [x] Phase 4 gate passed
 - [ ] Phase 5 gate passed
 - [ ] Safe time review completed
 - [ ] Phase 6 gate passed
