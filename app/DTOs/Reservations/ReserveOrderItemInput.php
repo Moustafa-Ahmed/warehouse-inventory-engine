@@ -2,6 +2,9 @@
 
 namespace App\DTOs\Reservations;
 
+use App\Enums\Reservations\Kind;
+use DateTimeImmutable;
+
 final readonly class ReserveOrderItemInput
 {
     public function __construct(
@@ -10,5 +13,7 @@ final readonly class ReserveOrderItemInput
         public string $idempotencyKey,
         public ?int $actorId = null,
         public string $source = 'system',
+        public Kind $kind = Kind::Confirmed,
+        public ?DateTimeImmutable $expiresAt = null,
     ) {}
 }

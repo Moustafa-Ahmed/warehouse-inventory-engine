@@ -4,6 +4,10 @@ namespace App\Services\Reservations;
 
 use App\DTOs\Inventory\Movement;
 use App\DTOs\Orders\OrderItemProgress;
+use App\DTOs\Reservations\ConfirmReservationInput;
+use App\DTOs\Reservations\ConfirmReservationResult;
+use App\DTOs\Reservations\ExpireReservationInput;
+use App\DTOs\Reservations\ExpireReservationResult;
 use App\DTOs\Reservations\ReleaseReservationInput;
 use App\DTOs\Reservations\ReleaseReservationResult;
 use App\DTOs\Reservations\ReserveOrderItemInput;
@@ -24,6 +28,7 @@ use App\Services\Operations\OperationService;
 use App\Services\Orders\OrderItemProgressCalculator;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use LogicException;
 
 final class ReservationService
 {
@@ -46,6 +51,8 @@ final class ReservationService
                     'warehouse_id' => $input->warehouseId,
                     'actor_id' => $input->actorId,
                     'source' => $input->source,
+                    'kind' => $input->kind->value,
+                    'expires_at' => $input->expiresAt?->format(DATE_ATOM),
                 ],
                 fn (Operation $operation): array => $this->applyReservation($operation, $input),
             ),
@@ -60,6 +67,82 @@ final class ReservationService
             outstandingQuantity: $result['outstanding_quantity'],
             fullyAllocated: $result['fully_allocated'],
         );
+    }
+
+    public function confirm(ConfirmReservationInput $input): ConfirmReservationResult
+    {
+        $this->validateConfirmationInput($input);
+
+        $result = DB::transaction(
+            fn (): array => $this->operations->execute(
+                Type::ConfirmReservation,
+                $input->idempotencyKey,
+                [
+                    'reservation_id' => $input->reservationId,
+                    'actor_id' => $input->actorId,
+                    'source' => $input->source,
+                ],
+                fn (Operation $operation): array => $this->applyConfirmation($operation, $input),
+            ),
+            attempts: 3,
+        );
+
+        return new ConfirmReservationResult(
+            operationId: $result['operation_id'],
+            reservationId: $result['reservation_id'],
+            kind: Kind::from($result['kind']),
+        );
+    }
+
+    public function expire(ExpireReservationInput $input): ExpireReservationResult
+    {
+        $this->validateExpirationInput($input);
+
+        $result = DB::transaction(
+            fn (): array => $this->operations->execute(
+                Type::ExpireReservation,
+                $input->idempotencyKey,
+                [
+                    'reservation_id' => $input->reservationId,
+                    'source' => $input->source,
+                ],
+                fn (Operation $operation): array => $this->applyExpiration($operation, $input),
+            ),
+            attempts: 3,
+        );
+
+        return new ExpireReservationResult(
+            operationId: $result['operation_id'],
+            reservationId: $result['reservation_id'],
+            releasedQuantity: $result['released_quantity'],
+            outstandingQuantity: $result['outstanding_quantity'],
+        );
+    }
+
+    public function expireDueReservations(int $batchSize = 50): int
+    {
+        if ($batchSize < 1 || $batchSize > 500) {
+            throw new InvalidArgumentException('Expiration batch size must be between 1 and 500.');
+        }
+
+        $reservationIds = Reservation::query()
+            ->where('kind', Kind::Temporary->value)
+            ->where('status', Status::Open->value)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->orderBy('expires_at')
+            ->orderBy('id')
+            ->limit($batchSize)
+            ->pluck('id');
+
+        foreach ($reservationIds as $reservationId) {
+            $this->expire(new ExpireReservationInput(
+                reservationId: (int) $reservationId,
+                idempotencyKey: "expire-reservation-{$reservationId}",
+            ));
+        }
+
+        return $reservationIds->count();
     }
 
     public function release(ReleaseReservationInput $input): ReleaseReservationResult
@@ -123,6 +206,38 @@ final class ReservationService
     }
 
     private function validateReserveInput(ReserveOrderItemInput $input): void
+    {
+        if (trim($input->idempotencyKey) === '') {
+            throw new InvalidArgumentException('An idempotency key is required.');
+        }
+
+        if (trim($input->source) === '') {
+            throw new InvalidArgumentException('A reservation source is required.');
+        }
+
+        if ($input->kind === Kind::Temporary) {
+            if ($input->expiresAt === null || $input->expiresAt <= now()) {
+                throw new InvalidArgumentException(
+                    'A temporary reservation requires a future expiration time.'
+                );
+            }
+        } elseif ($input->expiresAt !== null) {
+            throw new InvalidArgumentException('A confirmed reservation cannot have an expiration time.');
+        }
+    }
+
+    private function validateConfirmationInput(ConfirmReservationInput $input): void
+    {
+        if (trim($input->idempotencyKey) === '') {
+            throw new InvalidArgumentException('An idempotency key is required.');
+        }
+
+        if (trim($input->source) === '') {
+            throw new InvalidArgumentException('A reservation source is required.');
+        }
+    }
+
+    private function validateExpirationInput(ExpireReservationInput $input): void
     {
         if (trim($input->idempotencyKey) === '') {
             throw new InvalidArgumentException('An idempotency key is required.');
@@ -202,14 +317,14 @@ final class ReservationService
             'requested_quantity' => $beforeProgress->outstandingQuantity,
         ]);
         $reservation->forceFill([
-            'kind' => Kind::Confirmed,
+            'kind' => $input->kind,
             'status' => Status::Open,
             'reserved_quantity' => $allocatedQuantity,
             'picked_quantity' => 0,
             'packed_quantity' => 0,
             'shipped_quantity' => 0,
             'released_quantity' => 0,
-            'expires_at' => null,
+            'expires_at' => $input->expiresAt,
         ])->save();
 
         if ($allocatedQuantity === 0) {
@@ -249,8 +364,8 @@ final class ReservationService
             'actor_id' => $input->actorId,
             'source' => $input->source,
             'reason' => 'Available inventory reserved',
-            'before_kind' => Kind::Confirmed,
-            'after_kind' => Kind::Confirmed,
+            'before_kind' => $input->kind,
+            'after_kind' => $input->kind,
             'before_status' => Status::Open,
             'after_status' => Status::Open,
             'before_reserved_quantity' => 0,
@@ -272,6 +387,158 @@ final class ReservationService
             'allocated_quantity' => $allocatedQuantity,
             'outstanding_quantity' => $afterProgress->outstandingQuantity,
             'fully_allocated' => $afterProgress->outstandingQuantity === 0,
+        ];
+    }
+
+    /**
+     * @return array{operation_id: int, reservation_id: int, kind: string}
+     */
+    private function applyConfirmation(
+        Operation $operation,
+        ConfirmReservationInput $input,
+    ): array {
+        $orderItemId = Reservation::query()
+            ->whereKey($input->reservationId)
+            ->valueOrFail('order_item_id');
+        OrderItem::query()->lockForUpdate()->findOrFail($orderItemId);
+        $reservation = Reservation::query()
+            ->lockForUpdate()
+            ->findOrFail($input->reservationId);
+
+        if ($reservation->kind !== Kind::Temporary || $reservation->status !== Status::Open) {
+            throw new InvalidArgumentException('Only an open temporary reservation can be confirmed.');
+        }
+
+        if ($reservation->expires_at === null || ! $reservation->expires_at->isFuture()) {
+            throw new InvalidArgumentException('An expired temporary reservation cannot be confirmed.');
+        }
+
+        $reservation->forceFill([
+            'kind' => Kind::Confirmed,
+            'expires_at' => null,
+        ])->save();
+
+        ReservationTransition::query()->create([
+            'reservation_id' => $reservation->id,
+            'operation_id' => $operation->id,
+            'actor_id' => $input->actorId,
+            'source' => $input->source,
+            'reason' => 'Temporary reservation confirmed',
+            'before_kind' => Kind::Temporary,
+            'after_kind' => Kind::Confirmed,
+            'before_status' => $reservation->status,
+            'after_status' => $reservation->status,
+            'before_reserved_quantity' => $reservation->reserved_quantity,
+            'after_reserved_quantity' => $reservation->reserved_quantity,
+            'before_picked_quantity' => $reservation->picked_quantity,
+            'after_picked_quantity' => $reservation->picked_quantity,
+            'before_packed_quantity' => $reservation->packed_quantity,
+            'after_packed_quantity' => $reservation->packed_quantity,
+            'before_shipped_quantity' => $reservation->shipped_quantity,
+            'after_shipped_quantity' => $reservation->shipped_quantity,
+            'before_released_quantity' => $reservation->released_quantity,
+            'after_released_quantity' => $reservation->released_quantity,
+        ]);
+
+        return [
+            'operation_id' => $operation->id,
+            'reservation_id' => $reservation->id,
+            'kind' => $reservation->kind->value,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     operation_id: int,
+     *     reservation_id: int,
+     *     released_quantity: int,
+     *     outstanding_quantity: int
+     * }
+     */
+    private function applyExpiration(
+        Operation $operation,
+        ExpireReservationInput $input,
+    ): array {
+        $orderItemId = Reservation::query()
+            ->whereKey($input->reservationId)
+            ->valueOrFail('order_item_id');
+        $orderItem = OrderItem::query()
+            ->lockForUpdate()
+            ->findOrFail($orderItemId);
+        $reservation = Reservation::query()
+            ->lockForUpdate()
+            ->findOrFail($input->reservationId);
+
+        if (
+            $reservation->kind !== Kind::Temporary
+            || $reservation->status !== Status::Open
+            || $reservation->expires_at === null
+            || $reservation->expires_at->isFuture()
+        ) {
+            throw new InvalidArgumentException('The reservation is not eligible for expiration.');
+        }
+
+        if (
+            $reservation->picked_quantity !== 0
+            || $reservation->packed_quantity !== 0
+            || $reservation->shipped_quantity !== 0
+        ) {
+            throw new LogicException(
+                'A temporary reservation with physical progress cannot be expired.'
+            );
+        }
+
+        $releasedQuantity = $reservation->reserved_quantity;
+
+        if ($releasedQuantity > 0) {
+            $this->release(new ReleaseReservationInput(
+                reservationId: $reservation->id,
+                quantity: $releasedQuantity,
+                cancelOrderDemand: false,
+                reason: 'Temporary reservation expired',
+                idempotencyKey: 'expire-reservation-release-'.hash(
+                    'sha256',
+                    (string) $reservation->id,
+                ),
+                actorId: null,
+                source: $input->source,
+            ));
+            $reservation->refresh();
+            $orderItem->refresh();
+        }
+
+        $beforeStatus = $reservation->status;
+
+        $reservation->forceFill(['status' => Status::Expired])->save();
+
+        ReservationTransition::query()->create([
+            'reservation_id' => $reservation->id,
+            'operation_id' => $operation->id,
+            'actor_id' => null,
+            'source' => $input->source,
+            'reason' => 'Temporary reservation expired',
+            'before_kind' => $reservation->kind,
+            'after_kind' => $reservation->kind,
+            'before_status' => $beforeStatus,
+            'after_status' => Status::Expired,
+            'before_reserved_quantity' => $reservation->reserved_quantity,
+            'after_reserved_quantity' => $reservation->reserved_quantity,
+            'before_picked_quantity' => $reservation->picked_quantity,
+            'after_picked_quantity' => $reservation->picked_quantity,
+            'before_packed_quantity' => $reservation->packed_quantity,
+            'after_packed_quantity' => $reservation->packed_quantity,
+            'before_shipped_quantity' => $reservation->shipped_quantity,
+            'after_shipped_quantity' => $reservation->shipped_quantity,
+            'before_released_quantity' => $reservation->released_quantity,
+            'after_released_quantity' => $reservation->released_quantity,
+        ]);
+        $afterProgress = $this->progressFor($orderItem);
+
+        return [
+            'operation_id' => $operation->id,
+            'reservation_id' => $reservation->id,
+            'released_quantity' => $releasedQuantity,
+            'outstanding_quantity' => $afterProgress->outstandingQuantity,
         ];
     }
 
@@ -514,7 +781,7 @@ final class ReservationService
             ->findOrFail($input->reservationId);
 
         if ($reservation->order_item_id !== $orderItem->id) {
-            throw new \LogicException('The reservation order item changed while acquiring locks.');
+            throw new LogicException('The reservation order item changed while acquiring locks.');
         }
 
         if ($reservation->reserved_quantity < $input->quantity) {

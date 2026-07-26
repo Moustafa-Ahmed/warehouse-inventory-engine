@@ -191,12 +191,12 @@ Done when:
 
 ## Phase Gate
 
-- [ ] One shared quantity/progress calculator is used by order and reservation services
-- [ ] Full, partial, and zero reservation behavior passes
-- [ ] Release and cancellation do not touch physically progressed stock
-- [ ] Order edits reuse release behavior and conserve quantity
-- [ ] Outstanding demand remains explicit
-- [ ] Backorders recover through job and command paths wired after implementation
-- [ ] Supporting temporary confirmation/expiration is complete or explicitly recorded for the post-Phase-5 time review
-- [ ] Final-unit concurrency test passes on MySQL
-- [ ] Smoke and critical tests plus Pint pass
+- [x] One shared quantity/progress calculator is used by order and reservation services
+- [x] Full, partial, and zero reservation behavior passes
+- [x] Release and cancellation do not touch physically progressed stock
+- [x] Order edits reuse release behavior and conserve quantity
+- [x] Outstanding demand remains explicit
+- [x] Backorders recover through job and command paths wired after implementation
+- [x] Supporting temporary confirmation/expiration is complete or explicitly recorded for the post-Phase-5 time review
+- [x] Final-unit concurrency test passes on MySQL
+- [x] Smoke and critical tests plus Pint pass
