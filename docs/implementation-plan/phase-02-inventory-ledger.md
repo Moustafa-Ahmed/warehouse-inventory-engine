@@ -123,10 +123,10 @@ Done when:
 
 ## Phase Gate
 
-- [ ] Balances are mutated only by the movement applicator.
-- [ ] Receipt and transfer service methods are idempotent.
-- [ ] Supporting adjustment work is complete or explicitly recorded for the post-Phase-5 time review.
-- [ ] Multi-row locks use deterministic order.
-- [ ] Concurrency tests run against MySQL.
-- [ ] Rollback tests prove atomic ledger/projection behavior.
-- [ ] Smoke and critical tests plus Pint pass.
+- [x] Balances are mutated only by the movement applicator.
+- [x] Receipt and transfer service methods are idempotent.
+- [x] Supporting adjustment work is complete or explicitly recorded for the post-Phase-5 time review.
+- [x] Multi-row locks use deterministic order.
+- [x] Concurrency tests run against MySQL.
+- [x] Rollback tests prove atomic ledger/projection behavior.
+- [x] Smoke and critical tests plus Pint pass.
