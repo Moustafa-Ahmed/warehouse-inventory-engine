@@ -7,6 +7,7 @@ use App\Http\Controllers\InventoryBalanceController;
 use App\Http\Controllers\InventoryReceiptController;
 use App\Http\Controllers\InventoryTransferController;
 use App\Http\Controllers\MockProviderControlController;
+use App\Http\Controllers\OperationalReportController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\ProviderWebhookReceiptController;
@@ -112,4 +113,13 @@ Route::middleware(['auth', 'can:operate'])->group(function (): void {
         '/provider-webhook-receipts/{providerWebhookReceipt}',
         [ProviderWebhookReceiptController::class, 'show'],
     )->name('provider-webhook-receipts.show');
+
+    Route::get('/reports/inventory', [OperationalReportController::class, 'inventory'])
+        ->name('reports.inventory');
+    Route::get('/reports/reservations', [OperationalReportController::class, 'reservations'])
+        ->name('reports.reservations');
+    Route::get('/reports/consumed-orders', [OperationalReportController::class, 'consumedOrders'])
+        ->name('reports.consumed-orders');
+    Route::get('/reports/movements', [OperationalReportController::class, 'movements'])
+        ->name('reports.movements');
 });

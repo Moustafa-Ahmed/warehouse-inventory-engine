@@ -73,6 +73,13 @@
                     </li>
                     <li class="nav-item">
                         <a
+                            @class(['nav-link', 'active' => request()->routeIs('reports.*')])
+                            href="{{ route('reports.inventory') }}"
+                            @if (request()->routeIs('reports.*')) aria-current="page" @endif
+                        >Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a
                             @class(['nav-link', 'active' => request()->routeIs('inventory.receipts.*')])
                             href="{{ route('inventory.receipts.create') }}"
                             @if (request()->routeIs('inventory.receipts.*')) aria-current="page" @endif
