@@ -97,6 +97,15 @@ The first safe time review happens after Phase 5. At that point the backend must
 
 Phase 6 then builds the minimum UI and reports needed to operate and explain those capabilities. Presentation-only dashboard polish and broad catalog convenience are supporting work.
 
+### Post-Phase-5 Review
+
+Completed after the Phase 5 gate passed with the full MySQL suite green.
+
+- Keep Phase 6 commits P6.1 through P6.8 submission-critical and unchanged.
+- Keep P6.9 catalog administration and P6.10 dashboard work intentionally small and implement them only after the operational workflows, reports, and demo scenarios work.
+- Continue to defer the optional API, cross-warehouse automatic allocation, and ledger-reconciliation stretch work until all required submission deliverables pass.
+- No implemented backend capability is removed or weakened by this review.
+
 ## Optional and Stretch Work
 
 Optional work is deliberately isolated:
@@ -119,8 +128,8 @@ Do not begin it unless:
 - [x] Phase 2 gate passed
 - [x] Phase 3 gate passed
 - [x] Phase 4 gate passed
-- [ ] Phase 5 gate passed
-- [ ] Safe time review completed
+- [x] Phase 5 gate passed
+- [x] Safe time review completed
 - [ ] Phase 6 gate passed
 - [ ] Phase 7 gate passed
 - [ ] Required screenshot captured
