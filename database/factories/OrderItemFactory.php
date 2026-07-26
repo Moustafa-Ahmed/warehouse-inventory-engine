@@ -31,4 +31,49 @@ class OrderItemFactory extends Factory
             'delivered_quantity' => 0,
         ];
     }
+
+    public function outstanding(int $quantity = 10): static
+    {
+        return $this->state(fn () => [
+            'ordered_quantity' => $quantity,
+            'cancelled_quantity' => 0,
+            'reserved_quantity' => 0,
+            'picked_quantity' => 0,
+            'packed_quantity' => 0,
+            'shipped_quantity' => 0,
+            'delivered_quantity' => 0,
+        ]);
+    }
+
+    public function partiallyReserved(
+        int $orderedQuantity = 10,
+        int $reservedQuantity = 6,
+    ): static {
+        if ($reservedQuantity < 1 || $reservedQuantity >= $orderedQuantity) {
+            throw new \InvalidArgumentException('A partial reservation must be between zero and the ordered quantity.');
+        }
+
+        return $this->state(fn () => [
+            'ordered_quantity' => $orderedQuantity,
+            'cancelled_quantity' => 0,
+            'reserved_quantity' => $reservedQuantity,
+            'picked_quantity' => 0,
+            'packed_quantity' => 0,
+            'shipped_quantity' => 0,
+            'delivered_quantity' => 0,
+        ]);
+    }
+
+    public function fullyShipped(int $quantity = 10): static
+    {
+        return $this->state(fn () => [
+            'ordered_quantity' => $quantity,
+            'cancelled_quantity' => 0,
+            'reserved_quantity' => 0,
+            'picked_quantity' => 0,
+            'packed_quantity' => 0,
+            'shipped_quantity' => $quantity,
+            'delivered_quantity' => 0,
+        ]);
+    }
 }

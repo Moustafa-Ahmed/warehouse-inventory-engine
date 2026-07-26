@@ -7,4 +7,5 @@ enum Type: string
     case ReceiveStock = 'receive_stock';
     case AdjustInventory = 'adjust_inventory';
     case TransferStock = 'transfer_stock';
+    case CreateOrder = 'create_order';
 }
