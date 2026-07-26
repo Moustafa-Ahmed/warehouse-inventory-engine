@@ -10,10 +10,12 @@ use App\Http\Controllers\MockProviderControlController;
 use App\Http\Controllers\OperationalReportController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderItemController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProviderWebhookReceiptController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ShipmentController;
 use App\Http\Controllers\ShippingProviderWebhookController;
+use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/webhooks/shipping-provider', ShippingProviderWebhookController::class)
@@ -32,6 +34,10 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 
 Route::middleware(['auth', 'can:operate'])->group(function (): void {
     Route::view('/', 'operations.home')->name('operations.home');
+    Route::resource('products', ProductController::class)
+        ->except(['show', 'destroy']);
+    Route::resource('warehouses', WarehouseController::class)
+        ->except(['show', 'destroy']);
     Route::get('/inventory/balances', [InventoryBalanceController::class, 'index'])
         ->name('inventory.balances.index');
     Route::get('/inventory/balances/{inventoryBalance}', [InventoryBalanceController::class, 'show'])

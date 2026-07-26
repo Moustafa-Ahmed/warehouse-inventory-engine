@@ -45,6 +45,13 @@
                     </li>
                     <li class="nav-item">
                         <a
+                            @class(['nav-link', 'active' => request()->routeIs('products.*', 'warehouses.*')])
+                            href="{{ route('products.index') }}"
+                            @if (request()->routeIs('products.*', 'warehouses.*')) aria-current="page" @endif
+                        >Catalog</a>
+                    </li>
+                    <li class="nav-item">
+                        <a
                             @class(['nav-link', 'active' => request()->routeIs('inventory.balances.*')])
                             href="{{ route('inventory.balances.index') }}"
                             @if (request()->routeIs('inventory.balances.*')) aria-current="page" @endif
