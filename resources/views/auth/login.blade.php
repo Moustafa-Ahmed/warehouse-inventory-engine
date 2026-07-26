@@ -1,35 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Administrator login</title>
-</head>
-<body>
-    <main>
-        <h1>Warehouse administrator login</h1>
+<x-layouts.guest title="Administrator login">
+    <section class="card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <p class="text-uppercase small fw-semibold text-primary mb-2">Warehouse Inventory Engine</p>
+            <h1 class="h3 mb-2">Administrator login</h1>
+            <p class="text-body-secondary mb-4">Sign in to manage inventory and fulfillment operations.</p>
 
-        @if ($errors->any())
-            <div role="alert">
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+            <x-ui.messages />
 
-        <form method="post" action="{{ route('login.store') }}">
-            @csrf
+            <form method="post" action="{{ route('login.store') }}" class="d-grid gap-3">
+                @csrf
 
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="username">
+                <div>
+                    <label class="form-label" for="email">Email</label>
+                    <input
+                        @class(['form-control', 'is-invalid' => $errors->has('email')])
+                        id="email"
+                        name="email"
+                        type="email"
+                        value="{{ old('email') }}"
+                        required
+                        autofocus
+                        autocomplete="username"
+                    >
+                </div>
 
-            <label for="password">Password</label>
-            <input id="password" name="password" type="password" required autocomplete="current-password">
+                <div>
+                    <label class="form-label" for="password">Password</label>
+                    <input
+                        @class(['form-control', 'is-invalid' => $errors->has('password')])
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
 
-            <button type="submit">Log in</button>
-        </form>
-    </main>
-</body>
-</html>
+                <button class="btn btn-primary" type="submit">Log in</button>
+            </form>
+        </div>
+    </section>
+</x-layouts.guest>

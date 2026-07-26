@@ -1,20 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Warehouse operations</title>
-</head>
-<body>
-    <main>
-        <h1>Warehouse operations</h1>
-        <p>Signed in as {{ auth()->user()->name }}.</p>
-        <p><a href="{{ route('inventory.receipts.create') }}">Receive stock</a></p>
+<x-layouts.app title="Operations">
+    <header class="page-heading mb-4">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <x-ui.badge variant="primary">Administrator</x-ui.badge>
+            <span class="text-body-secondary small">Authenticated operational interface</span>
+        </div>
+        <h1 class="display-6 fw-semibold">Warehouse operations</h1>
+        <p class="lead text-body-secondary">
+            Use the operational workflows to change inventory through the same locked, idempotent services used by jobs and commands.
+        </p>
+    </header>
 
-        <form method="post" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit">Log out</button>
-        </form>
-    </main>
-</body>
-</html>
+    <div class="row g-4">
+        <div class="col-12 col-md-6 col-xl-4">
+            <section class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="h5 card-title">Receive stock</h2>
+                    <p class="card-text text-body-secondary">
+                        Record an external stock receipt and inspect its stored operation result.
+                    </p>
+                    <a class="btn btn-primary" href="{{ route('inventory.receipts.create') }}">Open receipt form</a>
+                </div>
+            </section>
+        </div>
+    </div>
+</x-layouts.app>
