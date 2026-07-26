@@ -19,4 +19,5 @@ enum Type: string
     case UnpackReservation = 'unpack_reservation';
     case CreateShipment = 'create_shipment';
     case ConfirmShipmentHandoff = 'confirm_shipment_handoff';
+    case ConfirmShipmentDelivery = 'confirm_shipment_delivery';
 }

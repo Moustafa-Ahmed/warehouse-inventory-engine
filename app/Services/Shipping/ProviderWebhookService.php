@@ -17,6 +17,8 @@ final class ProviderWebhookService
 
         if ($receipt->event_type === EventType::ShipmentConfirmed) {
             $this->shipments->confirmHandoff($receipt->id);
+        } elseif ($receipt->event_type === EventType::DeliveryConfirmed) {
+            $this->shipments->confirmDelivery($receipt->id);
         }
     }
 }

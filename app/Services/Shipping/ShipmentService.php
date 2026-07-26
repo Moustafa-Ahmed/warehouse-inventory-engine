@@ -93,6 +93,153 @@ final class ShipmentService
         );
     }
 
+    public function confirmDelivery(int $providerWebhookReceiptId): void
+    {
+        $receipt = ProviderWebhookReceipt::query()->findOrFail($providerWebhookReceiptId);
+
+        DB::transaction(
+            fn (): array => $this->operations->execute(
+                Type::ConfirmShipmentDelivery,
+                'provider-webhook-receipt-'.$receipt->id,
+                [
+                    'provider_webhook_receipt_id' => $receipt->id,
+                    'raw_body_hash' => hash('sha256', $receipt->raw_body),
+                ],
+                fn (Operation $operation): array => $this->applyDeliveryConfirmation(
+                    $operation,
+                    $receipt->id,
+                ),
+            ),
+            attempts: 3,
+        );
+    }
+
+    /**
+     * @return array{operation_id: int, shipment_id: int}
+     */
+    private function applyDeliveryConfirmation(
+        Operation $operation,
+        int $receiptId,
+    ): array {
+        $receipt = ProviderWebhookReceipt::query()
+            ->lockForUpdate()
+            ->findOrFail($receiptId);
+
+        if (
+            $receipt->event_type !== EventType::DeliveryConfirmed
+            || ! in_array($receipt->status, [
+                ReceiptStatus::Pending,
+                ReceiptStatus::RetryableFailure,
+            ], true)
+        ) {
+            throw new InvalidArgumentException(
+                'The provider webhook receipt is not eligible for delivery confirmation.'
+            );
+        }
+
+        /** @var array<string, mixed> $payload */
+        $payload = json_decode($receipt->raw_body, true, flags: JSON_THROW_ON_ERROR);
+        $submission = ProviderSubmission::query()
+            ->where('provider_request_key', $payload['provider_request_key'])
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        if (
+            $submission->external_shipment_id === null
+            || ! hash_equals(
+                $submission->external_shipment_id,
+                $payload['external_shipment_id'],
+            )
+        ) {
+            throw new InvalidArgumentException(
+                'The delivery callback does not match the provider submission.'
+            );
+        }
+
+        $shipment = Shipment::query()
+            ->lockForUpdate()
+            ->findOrFail($submission->shipment_id);
+
+        if ($shipment->status !== Status::Shipped) {
+            throw new InvalidArgumentException(
+                'Delivery can advance only after carrier handoff is confirmed.'
+            );
+        }
+
+        $callbackItems = collect($payload['items'])
+            ->mapWithKeys(fn (array $item): array => [
+                (int) $item['shipment_item_id'] => (int) $item['quantity'],
+            ])
+            ->sortKeys();
+        $shipmentItems = ShipmentItem::query()
+            ->where('shipment_id', $shipment->id)
+            ->whereIn('id', $callbackItems->keys())
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        if ($shipmentItems->count() !== $callbackItems->count()) {
+            throw new InvalidArgumentException(
+                'The delivery callback contains an item outside the shipment.'
+            );
+        }
+
+        $reservationIds = $shipmentItems->pluck('reservation_id');
+        $reservations = Reservation::query()
+            ->whereIn('id', $reservationIds)
+            ->orderBy('id')
+            ->get()
+            ->keyBy('id');
+        $orderItems = OrderItem::query()
+            ->whereIn('id', $reservations->pluck('order_item_id')->unique())
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        foreach ($callbackItems as $shipmentItemId => $quantity) {
+            $shipmentItem = $shipmentItems->get($shipmentItemId);
+            $remainingQuantity = $shipmentItem->quantity
+                - $shipmentItem->delivered_quantity;
+
+            if ($quantity < 1 || $quantity > $remainingQuantity) {
+                throw new InvalidArgumentException(
+                    'Delivered quantity must be positive and cannot exceed the shipment item quantity.'
+                );
+            }
+
+            $reservation = $reservations->get($shipmentItem->reservation_id);
+            $orderItem = $orderItems->get($reservation->order_item_id);
+            $shipmentItem->forceFill([
+                'delivered_quantity' => $shipmentItem->delivered_quantity + $quantity,
+            ])->save();
+            $orderItem->forceFill([
+                'delivered_quantity' => $orderItem->delivered_quantity + $quantity,
+            ])->save();
+            $this->progress->calculate(
+                $orderItem->ordered_quantity,
+                $orderItem->cancelled_quantity,
+                $orderItem->reserved_quantity,
+                $orderItem->picked_quantity,
+                $orderItem->packed_quantity,
+                $orderItem->shipped_quantity,
+                $orderItem->delivered_quantity,
+            );
+        }
+
+        $receipt->forceFill([
+            'status' => ReceiptStatus::Processed,
+            'failure_reason' => null,
+            'processed_at' => now(),
+        ])->save();
+
+        return [
+            'operation_id' => $operation->id,
+            'shipment_id' => $shipment->id,
+        ];
+    }
+
     /**
      * @return array{operation_id: int, shipment_id: int}
      */
