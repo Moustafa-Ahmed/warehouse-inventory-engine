@@ -52,4 +52,4 @@ it('processes eligible shipments through a repeat-safe thin job and command', fu
         ->assertSuccessful();
 
     Queue::assertNothingPushed();
-});
+})->repeat(3);

@@ -57,7 +57,7 @@ it('allows exactly one user to reserve the final available unit', function () {
         ->and(ReservationTransition::query()->sole()->actor_id)
         ->toBeIn($users->modelKeys())
         ->and(Operation::query()->count())->toBe(2);
-});
+})->repeat(3);
 
 it('executes concurrent duplicate reservation intent only once', function () {
     $product = Product::factory()->create();
@@ -91,4 +91,4 @@ it('executes concurrent duplicate reservation intent only once', function () {
         ->and(Operation::query()
             ->where('idempotency_key', 'concurrent-duplicate-reservation-001')
             ->count())->toBe(1);
-});
+})->repeat(3);

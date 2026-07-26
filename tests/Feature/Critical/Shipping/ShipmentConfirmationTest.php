@@ -117,4 +117,4 @@ it('confirms carrier handoff atomically and exactly once through a persisted web
         ->and(Operation::query()->count())->toBe(1)
         ->and(InventoryMovement::query()->count())->toBe(1)
         ->and(ReservationTransition::query()->count())->toBe(1);
-});
+})->repeat(3);

@@ -243,4 +243,4 @@ it('completes concurrent opposite-direction transfers without corrupting balance
         ->and($balances->get($secondWarehouse->id)->available_quantity)->toBe(9)
         ->and(InventoryMovement::query()->count())->toBe(4)
         ->and(Operation::query()->count())->toBe(4);
-});
+})->repeat(3);
