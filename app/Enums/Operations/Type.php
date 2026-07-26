@@ -15,4 +15,5 @@ enum Type: string
     case ExpireReservation = 'expire_reservation';
     case PickReservation = 'pick_reservation';
     case ReturnPickedInventory = 'return_picked_inventory';
+    case PackReservation = 'pack_reservation';
 }
