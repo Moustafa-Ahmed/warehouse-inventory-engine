@@ -9,6 +9,7 @@ use App\DTOs\Shipping\RequestItem;
 use App\DTOs\Shipping\Result;
 use App\Enums\ProviderSubmissions\Status as ProviderSubmissionStatus;
 use App\Enums\Shipments\Status as ShipmentStatus;
+use App\Enums\Shipping\EventType;
 use App\Enums\Shipping\Outcome;
 use App\Models\ProviderSubmission;
 use App\Models\Shipment;
@@ -99,6 +100,34 @@ final class ShipmentSubmissionService
                     ->all(),
             ),
         );
+    }
+
+    public function reconcile(int $providerSubmissionId): ?Result
+    {
+        $submission = ProviderSubmission::query()->findOrFail($providerSubmissionId);
+
+        if ($submission->status !== ProviderSubmissionStatus::Unknown) {
+            return null;
+        }
+
+        $result = $this->provider->statusFor($submission->provider_request_key);
+
+        if ($result === null) {
+            return null;
+        }
+
+        $this->recordResult($submission->id, $result);
+
+        if (in_array($result->latestConfirmedEvent, [
+            EventType::ShipmentConfirmed,
+            EventType::DeliveryConfirmed,
+        ], true)) {
+            $this->provider->requestHandoffConfirmationRedelivery(
+                $submission->provider_request_key,
+            );
+        }
+
+        return $result;
     }
 
     private function recordResult(int $submissionId, Result $result): void

@@ -3,6 +3,7 @@
 namespace App\DTOs\Shipping;
 
 use App\Enums\Shipping\CallbackIntent;
+use App\Enums\Shipping\EventType;
 use App\Enums\Shipping\Outcome;
 
 final readonly class Result
@@ -12,5 +13,6 @@ final readonly class Result
         public ?string $externalShipmentId,
         public Outcome $outcome,
         public ?CallbackIntent $callbackIntent,
+        public ?EventType $latestConfirmedEvent = null,
     ) {}
 }

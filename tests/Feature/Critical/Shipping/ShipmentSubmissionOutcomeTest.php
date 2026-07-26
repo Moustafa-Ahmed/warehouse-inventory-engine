@@ -45,6 +45,8 @@ it('records provider outcomes without calling the provider inside a transaction'
         {
             return $this->provider->statusFor($providerRequestKey);
         }
+
+        public function requestHandoffConfirmationRedelivery(string $providerRequestKey): void {}
     };
     $service = new ShipmentSubmissionService($provider);
 

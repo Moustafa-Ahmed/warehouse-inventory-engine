@@ -7,6 +7,7 @@ use App\DTOs\Shipping\Request;
 use App\DTOs\Shipping\RequestItem;
 use App\DTOs\Shipping\Result;
 use App\Enums\MockProviderShipments\Status;
+use App\Enums\MockProviderWebhooks\Status as WebhookStatus;
 use App\Enums\Shipping\EventType;
 use App\Enums\Shipping\Outcome;
 use App\Enums\Shipping\Scenario;
@@ -56,6 +57,40 @@ final class PersistentMockProvider implements ShippingProvider
         return $shipment === null
             ? null
             : $this->resultFor($shipment, responseResult: false);
+    }
+
+    public function requestHandoffConfirmationRedelivery(string $providerRequestKey): void
+    {
+        DB::transaction(function () use ($providerRequestKey): void {
+            $shipment = MockProviderShipment::query()
+                ->where('provider_request_key', $providerRequestKey)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (! in_array($shipment->status, [
+                Status::HandoffConfirmed,
+                Status::Delivered,
+            ], true)) {
+                return;
+            }
+
+            $webhook = $shipment->webhooks()
+                ->where('event_type', EventType::ShipmentConfirmed->value)
+                ->lockForUpdate()
+                ->first();
+
+            if ($webhook === null || $webhook->status === WebhookStatus::Acknowledged) {
+                return;
+            }
+
+            $webhook->forceFill([
+                'status' => WebhookStatus::Pending,
+                'next_delivery_at' => now(),
+                'acknowledged_at' => null,
+                'last_response_status_code' => null,
+                'failure_reason' => null,
+            ])->save();
+        }, attempts: 3);
     }
 
     private function createShipment(Request $request): MockProviderShipment
@@ -120,6 +155,11 @@ final class PersistentMockProvider implements ShippingProvider
                     : $shipment->external_shipment_id,
             outcome: $outcome,
             callbackIntent: $shipment->scenario->callbackIntent(),
+            latestConfirmedEvent: match ($shipment->status) {
+                Status::HandoffConfirmed => EventType::ShipmentConfirmed,
+                Status::Delivered => EventType::DeliveryConfirmed,
+                default => null,
+            },
         );
     }
 

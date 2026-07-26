@@ -10,4 +10,6 @@ interface ShippingProvider
     public function submit(Request $request): Result;
 
     public function statusFor(string $providerRequestKey): ?Result;
+
+    public function requestHandoffConfirmationRedelivery(string $providerRequestKey): void;
 }

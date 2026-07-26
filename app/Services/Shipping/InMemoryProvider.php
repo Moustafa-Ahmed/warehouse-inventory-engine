@@ -47,6 +47,8 @@ final class InMemoryProvider implements ShippingProvider
         return $this->resultsByRequestKey[$providerRequestKey]['status'] ?? null;
     }
 
+    public function requestHandoffConfirmationRedelivery(string $providerRequestKey): void {}
+
     private function externalShipmentId(string $providerRequestKey): ?string
     {
         if ($this->scenario === Scenario::PermanentFailure) {
