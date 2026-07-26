@@ -17,4 +17,5 @@ enum Type: string
     case ReturnPickedInventory = 'return_picked_inventory';
     case PackReservation = 'pack_reservation';
     case UnpackReservation = 'unpack_reservation';
+    case CreateShipment = 'create_shipment';
 }
