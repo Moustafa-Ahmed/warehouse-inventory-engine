@@ -196,6 +196,8 @@ npm run build
 
 The highest-risk concurrency, duplicate job, callback, and opposite-transfer tests intentionally repeat three times in the full suite. See [Testing Evidence](docs/testing-evidence.md) for acceptance-scenario traceability.
 
+![Passing Pest suite](docs/evidence/passing-tests.png)
+
 ## Core Business Decisions
 
 - A balance row stores only warehouse stock: available, reserved, picked, and packed. Shipped stock is external and derived from confirmed packed-to-external movements.
@@ -238,8 +240,11 @@ The complete decisions and observable examples are in the [Business Rules Handbo
 - [Business rules](docs/business-rules/README.md)
 - [Acceptance scenarios](docs/business-rules/acceptance-scenarios.md)
 - [Selected ERD approach](docs/erd-approaches/02-pessimistic-locking.md)
+- [System architecture](docs/ARCHITECTURE.md)
+- [AI usage and engineering ownership](docs/AI_USAGE.md)
+- [Video walkthrough and recording script](docs/VIDEO_WALKTHROUGH.md)
 - [Testing evidence](docs/testing-evidence.md)
 - [Local shipping runtime](docs/local-shipping-runtime.md)
 - [Local administrator setup](docs/local-administrator.md)
 
-The final system architecture and AI-usage disclosure are maintained in `docs/ARCHITECTURE.md` and `docs/AI_USAGE.md`.
+The final video URL is pending owner recording and upload; it must replace the pending status in the walkthrough document before submission.

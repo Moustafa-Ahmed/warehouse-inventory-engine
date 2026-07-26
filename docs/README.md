@@ -15,6 +15,8 @@ This directory is the navigation hub for the challenge documentation. The busine
 
 - [AI Usage and Engineering Ownership](AI_USAGE.md) — AI-assisted workflow, owner decisions, rejected suggestions, and review readiness.
 
+- [Video Walkthrough](VIDEO_WALKTHROUGH.md) — timed recording script, deterministic demonstrations, and upload checklist.
+
 - [Testing Evidence](testing-evidence.md) — acceptance-scenario classification and critical-risk traceability.
 
 - [Local Shipping Runtime](local-shipping-runtime.md) — queue, callback URL, worker, and scheduler requirements for the persistent mock provider.
@@ -56,12 +58,12 @@ This directory is the navigation hub for the challenge documentation. The busine
 
 ## Required Submission Documents
 
-The root `README.md`, [System Architecture](ARCHITECTURE.md), and [AI Usage and Engineering Ownership](AI_USAGE.md) were finalized from the working Phase 6 demo. The video outline is completed in the remaining Phase 7 submission tasks.
+The root `README.md`, [System Architecture](ARCHITECTURE.md), [AI Usage and Engineering Ownership](AI_USAGE.md), and [Video Walkthrough](VIDEO_WALKTHROUGH.md) were finalized from the working Phase 6 demo.
 
 Phase 7 also adds:
 
 - Passing-test screenshot.
-- Video walkthrough link.
+- Uploaded video walkthrough link after owner recording.
 - Verified GitHub/GitLab repository URL and reviewer access.
 
 The business-rules handbook and implementation plan are working design documents. If an agreed rule changes, update the decision register and every affected document in the same commit.
