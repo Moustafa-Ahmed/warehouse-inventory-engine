@@ -11,6 +11,8 @@ This directory is the navigation hub for the challenge documentation. The busine
 
 ## Operations
 
+- [System Architecture](ARCHITECTURE.md) — implemented schema, transaction boundaries, provider flows, security, trade-offs, and evidence.
+
 - [Testing Evidence](testing-evidence.md) — acceptance-scenario classification and critical-risk traceability.
 
 - [Local Shipping Runtime](local-shipping-runtime.md) — queue, callback URL, worker, and scheduler requirements for the persistent mock provider.
@@ -52,7 +54,7 @@ This directory is the navigation hub for the challenge documentation. The busine
 
 ## Required Submission Documents
 
-The root `README.md`, `docs/ARCHITECTURE.md`, `docs/AI_USAGE.md`, and the video outline are intentionally created after the Phase 6 demo is working, then completed and verified during Phase 7.
+The root `README.md` and [System Architecture](ARCHITECTURE.md) were finalized from the working Phase 6 demo. `docs/AI_USAGE.md` and the video outline are completed in the remaining Phase 7 submission tasks.
 
 Phase 7 also adds:
 
