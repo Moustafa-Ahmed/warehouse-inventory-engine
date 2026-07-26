@@ -8,16 +8,20 @@ use App\DTOs\Fulfillment\PickReservationInput;
 use App\DTOs\Fulfillment\PickReservationResult;
 use App\DTOs\Fulfillment\ReturnPickedInventoryInput;
 use App\DTOs\Fulfillment\ReturnPickedInventoryResult;
+use App\DTOs\Fulfillment\UnpackReservationInput;
+use App\DTOs\Fulfillment\UnpackReservationResult;
 use App\DTOs\Inventory\Movement;
 use App\DTOs\Orders\OrderItemProgress;
 use App\Enums\Inventory\MovementBucket;
 use App\Enums\Operations\Type;
 use App\Enums\Reservations\Kind;
 use App\Enums\Reservations\Status;
+use App\Enums\Shipments\Status as ShipmentStatus;
 use App\Models\Operation;
 use App\Models\OrderItem;
 use App\Models\Reservation;
 use App\Models\ReservationTransition;
+use App\Models\ShipmentItem;
 use App\Models\User;
 use App\Services\Inventory\InventoryMovementService;
 use App\Services\Operations\OperationService;
@@ -121,6 +125,36 @@ final class FulfillmentService
         );
     }
 
+    public function unpack(UnpackReservationInput $input): UnpackReservationResult
+    {
+        $this->validateUnpackInput($input);
+
+        $result = DB::transaction(
+            fn (): array => $this->operations->execute(
+                Type::UnpackReservation,
+                $input->idempotencyKey,
+                [
+                    'reservation_id' => $input->reservationId,
+                    'quantity' => $input->quantity,
+                    'reason' => $input->reason,
+                    'actor_id' => $input->actorId,
+                    'source' => $input->source,
+                ],
+                fn (Operation $operation): array => $this->applyUnpack($operation, $input),
+            ),
+            attempts: 3,
+        );
+
+        return new UnpackReservationResult(
+            operationId: $result['operation_id'],
+            reservationId: $result['reservation_id'],
+            unpackedQuantity: $result['unpacked_quantity'],
+            remainingPackedQuantity: $result['remaining_packed_quantity'],
+            totalPickedQuantity: $result['total_picked_quantity'],
+            outstandingQuantity: $result['outstanding_quantity'],
+        );
+    }
+
     private function validatePickInput(PickReservationInput $input): void
     {
         if ($input->quantity < 1) {
@@ -159,6 +193,25 @@ final class FulfillmentService
     {
         if ($input->quantity < 1) {
             throw new InvalidArgumentException('Pack quantity must be positive.');
+        }
+
+        if (trim($input->idempotencyKey) === '') {
+            throw new InvalidArgumentException('An idempotency key is required.');
+        }
+
+        if (trim($input->source) === '') {
+            throw new InvalidArgumentException('A fulfillment source is required.');
+        }
+    }
+
+    private function validateUnpackInput(UnpackReservationInput $input): void
+    {
+        if ($input->quantity < 1) {
+            throw new InvalidArgumentException('Unpack quantity must be positive.');
+        }
+
+        if (trim($input->reason) === '') {
+            throw new InvalidArgumentException('An unpack reason is required.');
         }
 
         if (trim($input->idempotencyKey) === '') {
@@ -463,6 +516,110 @@ final class FulfillmentService
             'packed_quantity' => $input->quantity,
             'remaining_picked_quantity' => $reservation->picked_quantity,
             'total_packed_quantity' => $reservation->packed_quantity,
+            'outstanding_quantity' => $progress->outstandingQuantity,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     operation_id: int,
+     *     reservation_id: int,
+     *     unpacked_quantity: int,
+     *     remaining_packed_quantity: int,
+     *     total_picked_quantity: int,
+     *     outstanding_quantity: int
+     * }
+     */
+    private function applyUnpack(
+        Operation $operation,
+        UnpackReservationInput $input,
+    ): array {
+        $orderItemId = Reservation::query()
+            ->whereKey($input->reservationId)
+            ->valueOrFail('order_item_id');
+        $orderItem = OrderItem::query()
+            ->lockForUpdate()
+            ->findOrFail($orderItemId);
+        $reservation = Reservation::query()
+            ->lockForUpdate()
+            ->findOrFail($input->reservationId);
+
+        if ($reservation->kind !== Kind::Confirmed || $reservation->status !== Status::Open) {
+            throw new InvalidArgumentException(
+                'Only an open confirmed reservation can be unpacked.'
+            );
+        }
+
+        $assignedPackedQuantity = (int) ShipmentItem::query()
+            ->join('shipments', 'shipments.id', '=', 'shipment_items.shipment_id')
+            ->where('shipment_items.reservation_id', $reservation->id)
+            ->where('shipments.status', ShipmentStatus::PendingHandoff->value)
+            ->sum('shipment_items.quantity');
+        $unassignedPackedQuantity = $reservation->packed_quantity - $assignedPackedQuantity;
+
+        if ($input->quantity > $unassignedPackedQuantity) {
+            throw new InvalidArgumentException(
+                'Unpack quantity cannot include inventory assigned to a pending shipment.'
+            );
+        }
+
+        $beforePickedQuantity = $reservation->picked_quantity;
+        $beforePackedQuantity = $reservation->packed_quantity;
+
+        $this->movements->apply(
+            $operation,
+            new Movement(
+                productId: $orderItem->product_id,
+                quantity: $input->quantity,
+                sourceWarehouseId: $reservation->warehouse_id,
+                sourceBucket: MovementBucket::Packed,
+                destinationWarehouseId: $reservation->warehouse_id,
+                destinationBucket: MovementBucket::Picked,
+                businessReferenceType: 'reservation_unpack',
+                businessReferenceId: (string) $reservation->id,
+                actorId: $input->actorId,
+                metadata: ['reason' => $input->reason],
+            ),
+        );
+
+        $reservation->forceFill([
+            'picked_quantity' => $beforePickedQuantity + $input->quantity,
+            'packed_quantity' => $beforePackedQuantity - $input->quantity,
+        ])->save();
+        $orderItem->forceFill([
+            'picked_quantity' => $orderItem->picked_quantity + $input->quantity,
+            'packed_quantity' => $orderItem->packed_quantity - $input->quantity,
+        ])->save();
+        $progress = $this->progressFor($orderItem);
+
+        ReservationTransition::query()->create([
+            'reservation_id' => $reservation->id,
+            'operation_id' => $operation->id,
+            'actor_id' => $input->actorId,
+            'source' => $input->source,
+            'reason' => $input->reason,
+            'before_kind' => $reservation->kind,
+            'after_kind' => $reservation->kind,
+            'before_status' => $reservation->status,
+            'after_status' => $reservation->status,
+            'before_reserved_quantity' => $reservation->reserved_quantity,
+            'after_reserved_quantity' => $reservation->reserved_quantity,
+            'before_picked_quantity' => $beforePickedQuantity,
+            'after_picked_quantity' => $reservation->picked_quantity,
+            'before_packed_quantity' => $beforePackedQuantity,
+            'after_packed_quantity' => $reservation->packed_quantity,
+            'before_shipped_quantity' => $reservation->shipped_quantity,
+            'after_shipped_quantity' => $reservation->shipped_quantity,
+            'before_released_quantity' => $reservation->released_quantity,
+            'after_released_quantity' => $reservation->released_quantity,
+        ]);
+
+        return [
+            'operation_id' => $operation->id,
+            'reservation_id' => $reservation->id,
+            'unpacked_quantity' => $input->quantity,
+            'remaining_packed_quantity' => $reservation->packed_quantity,
+            'total_picked_quantity' => $reservation->picked_quantity,
             'outstanding_quantity' => $progress->outstandingQuantity,
         ];
     }
