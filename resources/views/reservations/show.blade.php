@@ -60,6 +60,20 @@
         </section>
     @endif
 
+    @if (session('fulfillment_result'))
+        <section class="alert alert-success operation-result mb-4" aria-labelledby="fulfillment-result">
+            <h2 id="fulfillment-result" class="h5">Fulfillment operation result</h2>
+            <dl class="row mb-0">
+                <dt class="col-sm-5">Operation</dt>
+                <dd class="col-sm-7">{{ session('fulfillment_result.operation_id') }}</dd>
+                <dt class="col-sm-5">Quantity moved</dt>
+                <dd class="col-sm-7">{{ session('fulfillment_result.moved_quantity') }}</dd>
+                <dt class="col-sm-5">Remaining source quantity</dt>
+                <dd class="col-sm-7">{{ session('fulfillment_result.remaining_source_quantity') }}</dd>
+            </dl>
+        </section>
+    @endif
+
     <div class="row g-4 mb-4">
         <div class="col-12 col-xl-7">
             <section class="card border-0 shadow-sm h-100">
@@ -176,6 +190,69 @@
             </section>
         </div>
     </div>
+
+    @if ($canPick || $canReturnPicked || $canPack || $canUnpack)
+        <section class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h2 class="h5 mb-0">Warehouse fulfillment actions</h2>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    @if ($canPick)
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <form method="post" action="{{ route('reservations.pick', $reservation) }}">
+                                @csrf
+                                <input type="hidden" name="pick_operation_key" value="{{ $pickOperationKey }}">
+                                <label class="form-label" for="pick_quantity">Pick from reserved</label>
+                                <input class="form-control mb-2" id="pick_quantity" name="quantity" type="number" min="1" max="{{ $reservation->reserved_quantity }}" required>
+                                <button class="btn btn-primary btn-sm" type="submit">Pick inventory</button>
+                            </form>
+                        </div>
+                    @endif
+
+                    @if ($canReturnPicked)
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <form method="post" action="{{ route('reservations.return-picked', $reservation) }}">
+                                @csrf
+                                <input type="hidden" name="return_operation_key" value="{{ $returnOperationKey }}">
+                                <label class="form-label" for="return_quantity">Return picked to available</label>
+                                <input class="form-control mb-2" id="return_quantity" name="quantity" type="number" min="1" max="{{ $reservation->picked_quantity }}" required>
+                                <label class="form-label" for="return_reason">Reason</label>
+                                <input class="form-control mb-2" id="return_reason" name="reason" type="text" maxlength="500" required>
+                                <button class="btn btn-outline-primary btn-sm" type="submit">Return inventory</button>
+                            </form>
+                        </div>
+                    @endif
+
+                    @if ($canPack)
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <form method="post" action="{{ route('reservations.pack', $reservation) }}">
+                                @csrf
+                                <input type="hidden" name="pack_operation_key" value="{{ $packOperationKey }}">
+                                <label class="form-label" for="pack_quantity">Pack from picked</label>
+                                <input class="form-control mb-2" id="pack_quantity" name="quantity" type="number" min="1" max="{{ $reservation->picked_quantity }}" required>
+                                <button class="btn btn-primary btn-sm" type="submit">Pack inventory</button>
+                            </form>
+                        </div>
+                    @endif
+
+                    @if ($canUnpack)
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <form method="post" action="{{ route('reservations.unpack', $reservation) }}">
+                                @csrf
+                                <input type="hidden" name="unpack_operation_key" value="{{ $unpackOperationKey }}">
+                                <label class="form-label" for="unpack_quantity">Unpack to picked</label>
+                                <input class="form-control mb-2" id="unpack_quantity" name="quantity" type="number" min="1" max="{{ $reservation->packed_quantity }}" required>
+                                <label class="form-label" for="unpack_reason">Reason</label>
+                                <input class="form-control mb-2" id="unpack_reason" name="reason" type="text" maxlength="500" required>
+                                <button class="btn btn-outline-primary btn-sm" type="submit">Unpack inventory</button>
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </section>
+    @endif
 
     <section class="card border-0 shadow-sm">
         <div class="card-header bg-white">

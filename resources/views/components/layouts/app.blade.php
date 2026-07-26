@@ -59,6 +59,20 @@
                     </li>
                     <li class="nav-item">
                         <a
+                            @class(['nav-link', 'active' => request()->routeIs('shipments.*')])
+                            href="{{ route('shipments.index') }}"
+                            @if (request()->routeIs('shipments.*')) aria-current="page" @endif
+                        >Shipments</a>
+                    </li>
+                    <li class="nav-item">
+                        <a
+                            @class(['nav-link', 'active' => request()->routeIs('provider-webhook-receipts.*')])
+                            href="{{ route('provider-webhook-receipts.index') }}"
+                            @if (request()->routeIs('provider-webhook-receipts.*')) aria-current="page" @endif
+                        >Webhooks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a
                             @class(['nav-link', 'active' => request()->routeIs('inventory.receipts.*')])
                             href="{{ route('inventory.receipts.create') }}"
                             @if (request()->routeIs('inventory.receipts.*')) aria-current="page" @endif

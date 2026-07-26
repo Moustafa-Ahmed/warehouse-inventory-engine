@@ -104,9 +104,25 @@ final class ReservationController extends Controller
                     $reservation->kind === Kind::Confirmed
                     || $reservation->expires_at?->isFuture() === true
                 ),
+            'canPick' => $reservation->kind === Kind::Confirmed
+                && $reservation->status === Status::Open
+                && $reservation->reserved_quantity > 0,
+            'canReturnPicked' => $reservation->kind === Kind::Confirmed
+                && $reservation->status === Status::Open
+                && $reservation->picked_quantity > 0,
+            'canPack' => $reservation->kind === Kind::Confirmed
+                && $reservation->status === Status::Open
+                && $reservation->picked_quantity > 0,
+            'canUnpack' => $reservation->kind === Kind::Confirmed
+                && $reservation->status === Status::Open
+                && $reservation->packed_quantity > 0,
             'confirmationOperationKey' => (string) Str::uuid(),
             'releaseOperationKey' => (string) Str::uuid(),
             'allocationRunKey' => (string) Str::uuid(),
+            'pickOperationKey' => (string) Str::uuid(),
+            'returnOperationKey' => (string) Str::uuid(),
+            'packOperationKey' => (string) Str::uuid(),
+            'unpackOperationKey' => (string) Str::uuid(),
         ]);
     }
 

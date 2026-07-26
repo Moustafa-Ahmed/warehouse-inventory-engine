@@ -85,6 +85,24 @@ final class MockProviderControlService
         return $webhookId;
     }
 
+    public function replayWebhook(int $mockProviderWebhookId): int
+    {
+        $this->ensureAvailable();
+        $webhookId = DB::transaction(function () use ($mockProviderWebhookId): int {
+            $webhook = MockProviderWebhook::query()
+                ->lockForUpdate()
+                ->findOrFail($mockProviderWebhookId);
+
+            $this->makeDue($webhook);
+
+            return $webhook->id;
+        }, attempts: 3);
+
+        DeliverMockProviderWebhookJob::dispatch($webhookId);
+
+        return $webhookId;
+    }
+
     private function send(
         int $mockProviderShipmentId,
         EventType $eventType,
