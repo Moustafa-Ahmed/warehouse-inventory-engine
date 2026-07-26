@@ -11,10 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'product_id',
     'warehouse_id',
-    'available_quantity',
-    'reserved_quantity',
-    'picked_quantity',
-    'packed_quantity',
 ])]
 class InventoryBalance extends Model
 {

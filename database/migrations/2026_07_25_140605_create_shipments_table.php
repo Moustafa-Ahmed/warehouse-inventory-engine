@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -22,6 +23,15 @@ return new class extends Migration
             $table->index(['order_id', 'created_at']);
             $table->index(['warehouse_id', 'created_at']);
         });
+
+        DB::statement(
+            "ALTER TABLE shipments
+            ADD CONSTRAINT shipments_status_shipped_at_consistent
+            CHECK (
+                (status = 'pending_handoff' AND shipped_at IS NULL)
+                OR (status = 'shipped' AND shipped_at IS NOT NULL)
+            )"
+        );
     }
 
     /**
