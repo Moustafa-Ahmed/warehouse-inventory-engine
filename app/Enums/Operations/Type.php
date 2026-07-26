@@ -13,4 +13,5 @@ enum Type: string
     case EditOrderItemQuantity = 'edit_order_item_quantity';
     case ConfirmReservation = 'confirm_reservation';
     case ExpireReservation = 'expire_reservation';
+    case PickReservation = 'pick_reservation';
 }
