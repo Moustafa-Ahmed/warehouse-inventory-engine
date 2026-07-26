@@ -5,4 +5,5 @@ namespace App\Enums\Operations;
 enum Type: string
 {
     case ReceiveStock = 'receive_stock';
+    case AdjustInventory = 'adjust_inventory';
 }
