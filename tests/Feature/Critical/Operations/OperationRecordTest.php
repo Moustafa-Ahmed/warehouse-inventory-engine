@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Operations\Status;
+use App\Enums\Operations\Type;
 use App\Models\Operation;
 use Illuminate\Database\QueryException;
 
@@ -10,7 +11,7 @@ it('enforces idempotency key uniqueness and preserves a completed original resul
 
     $operation = Operation::factory()->completed()->create([
         'idempotency_key' => $idempotencyKey,
-        'operation_type' => 'test_operation',
+        'operation_type' => Type::ReceiveStock,
         'result_reference' => 'receipt:42',
         'result_payload' => $resultPayload,
     ]);

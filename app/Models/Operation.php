@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Operations\Status;
+use App\Enums\Operations\Type;
 use Database\Factories\OperationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,11 +13,6 @@ use Illuminate\Database\Eloquent\Model;
     'operation_type',
     'idempotency_key',
     'request_hash',
-    'status',
-    'result_reference',
-    'result_payload',
-    'failure_context',
-    'completed_at',
 ])]
 class Operation extends Model
 {
@@ -34,6 +30,7 @@ class Operation extends Model
     protected function casts(): array
     {
         return [
+            'operation_type' => Type::class,
             'status' => Status::class,
             'result_payload' => 'array',
             'failure_context' => 'array',

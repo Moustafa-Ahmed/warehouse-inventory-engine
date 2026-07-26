@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\Operations\Status;
+use App\Enums\Operations\Type;
 use App\Models\Operation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -20,7 +21,7 @@ class OperationFactory extends Factory
     public function definition(): array
     {
         return [
-            'operation_type' => fake()->slug(2),
+            'operation_type' => Type::ReceiveStock,
             'idempotency_key' => (string) Str::uuid(),
             'request_hash' => hash('sha256', fake()->uuid()),
             'status' => Status::Pending,
