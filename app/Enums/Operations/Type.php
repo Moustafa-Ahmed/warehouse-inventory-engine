@@ -10,4 +10,5 @@ enum Type: string
     case CreateOrder = 'create_order';
     case ReserveOrderItem = 'reserve_order_item';
     case ReleaseReservation = 'release_reservation';
+    case EditOrderItemQuantity = 'edit_order_item_quantity';
 }

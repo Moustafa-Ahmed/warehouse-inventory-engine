@@ -260,12 +260,19 @@ final class ReservationService
         Operation $operation,
         ReleaseReservationInput $input,
     ): array {
+        $orderItemId = Reservation::query()
+            ->whereKey($input->reservationId)
+            ->valueOrFail('order_item_id');
+        $orderItem = OrderItem::query()
+            ->lockForUpdate()
+            ->findOrFail($orderItemId);
         $reservation = Reservation::query()
             ->lockForUpdate()
             ->findOrFail($input->reservationId);
-        $orderItem = OrderItem::query()
-            ->lockForUpdate()
-            ->findOrFail($reservation->order_item_id);
+
+        if ($reservation->order_item_id !== $orderItem->id) {
+            throw new \LogicException('The reservation order item changed while acquiring locks.');
+        }
 
         if ($reservation->reserved_quantity < $input->quantity) {
             throw new InsufficientReservedQuantityException(
