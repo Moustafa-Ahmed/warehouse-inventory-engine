@@ -10,6 +10,49 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 final class ReservationReportService
 {
+    public function partialAllocations(int $perPage = 10): LengthAwarePaginator
+    {
+        return Reservation::query()
+            ->with([
+                'orderItem.order:id,order_number',
+                'orderItem.product:id,sku,name',
+                'warehouse:id,code,name',
+            ])
+            ->where('status', Status::Open->value)
+            ->whereRaw(
+                'reserved_quantity + picked_quantity + packed_quantity + shipped_quantity > 0'
+            )
+            ->whereRaw(
+                'requested_quantity > reserved_quantity + picked_quantity + packed_quantity + shipped_quantity + released_quantity'
+            )
+            ->select('reservations.*')
+            ->selectRaw(
+                'requested_quantity - reserved_quantity - picked_quantity - packed_quantity - shipped_quantity - released_quantity as outstanding_quantity'
+            )
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->paginate($perPage);
+    }
+
+    public function expiringReservations(
+        CarbonImmutable $cutoff,
+        int $perPage = 10,
+    ): LengthAwarePaginator {
+        return Reservation::query()
+            ->with([
+                'orderItem.order:id,order_number',
+                'orderItem.product:id,sku,name',
+                'warehouse:id,code,name',
+            ])
+            ->where('status', Status::Open->value)
+            ->where('kind', Kind::Temporary->value)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', $cutoff)
+            ->orderBy('expires_at')
+            ->orderBy('id')
+            ->paginate($perPage);
+    }
+
     public function reservations(
         Status $status = Status::Open,
         ?Kind $kind = null,

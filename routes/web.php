@@ -7,6 +7,7 @@ use App\Http\Controllers\InventoryBalanceController;
 use App\Http\Controllers\InventoryReceiptController;
 use App\Http\Controllers\InventoryTransferController;
 use App\Http\Controllers\MockProviderControlController;
+use App\Http\Controllers\OperationalDashboardController;
 use App\Http\Controllers\OperationalReportController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderItemController;
@@ -33,7 +34,8 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
 
 Route::middleware(['auth', 'can:operate'])->group(function (): void {
-    Route::view('/', 'operations.home')->name('operations.home');
+    Route::get('/', OperationalDashboardController::class)
+        ->name('operations.home');
     Route::resource('products', ProductController::class)
         ->except(['show', 'destroy']);
     Route::resource('warehouses', WarehouseController::class)
