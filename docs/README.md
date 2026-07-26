@@ -9,6 +9,10 @@ This directory is the navigation hub for the challenge documentation. The busine
 3. [Implementation Roadmap](implementation-plan/README.md)
 4. [Challenge Requirements](../challenge.txt)
 
+## Operations
+
+- [Local Shipping Runtime](local-shipping-runtime.md) — queue, callback URL, worker, and scheduler requirements for the persistent mock provider.
+
 ## Business Rules
 
 | Document | Purpose |

@@ -271,21 +271,21 @@ Done when:
 
 ## Phase Gate
 
-- [ ] Shipment submission service uses the early provider contract and persistent deterministic mock provider
-- [ ] Mock-provider shipments and webhooks persist independently from provider submissions and provider webhook receipts
-- [ ] Provider calls occur outside database transactions and inventory locks
-- [ ] Pending-shipment command and job are thin, bounded, and repeat-safe
-- [ ] Provider acceptance alone cannot mark a shipment shipped
-- [ ] Timeout-after-acceptance and permanent failure have distinct behavior
-- [ ] Stable-key status lookup and resubmission cannot create another external identity
-- [ ] Reconciliation cannot bypass the shipment-confirmed webhook
-- [ ] HMAC validation and replay protection pass
-- [ ] Local/demo callback delivery uses actual signed HTTP
-- [ ] Outbound transport retries retain one webhook identity and are observable
-- [ ] Expired outbound delivery claims are recoverable after worker termination
-- [ ] Identical duplicates, mismatched-body identity collisions, and out-of-order provider webhook receipts are safe
-- [ ] Shipment confirmation is atomic with inventory deduction
-- [ ] Every challenge-required mock-provider mode is deterministic and random mode remains available
-- [ ] Demo controls are unavailable outside local/testing environments
-- [ ] Scheduler exposes every persisted recovery path
-- [ ] Smoke, focused provider datasets, critical shipping tests, and Pint pass
+- [x] Shipment submission service uses the early provider contract and persistent deterministic mock provider
+- [x] Mock-provider shipments and webhooks persist independently from provider submissions and provider webhook receipts
+- [x] Provider calls occur outside database transactions and inventory locks
+- [x] Pending-shipment command and job are thin, bounded, and repeat-safe
+- [x] Provider acceptance alone cannot mark a shipment shipped
+- [x] Timeout-after-acceptance and permanent failure have distinct behavior
+- [x] Stable-key status lookup and resubmission cannot create another external identity
+- [x] Reconciliation cannot bypass the shipment-confirmed webhook
+- [x] HMAC validation and replay protection pass
+- [x] Local/demo callback delivery uses actual signed HTTP
+- [x] Outbound transport retries retain one webhook identity and are observable
+- [x] Expired outbound delivery claims are recoverable after worker termination
+- [x] Identical duplicates, mismatched-body identity collisions, and out-of-order provider webhook receipts are safe
+- [x] Shipment confirmation is atomic with inventory deduction
+- [x] Every challenge-required mock-provider mode is deterministic and random mode remains available
+- [x] Demo controls are unavailable outside local/testing environments
+- [x] Scheduler exposes every persisted recovery path
+- [x] Smoke, focused provider datasets, critical shipping tests, and Pint pass
