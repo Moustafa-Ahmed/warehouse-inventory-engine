@@ -241,14 +241,14 @@ Done when:
 
 ## Phase Gate
 
-- [ ] Smoke and critical test harnesses use the documented MySQL environment
-- [ ] Provider contract, readonly shipping DTOs, and deterministic fake outcome mapping pass focused tests
-- [ ] Fresh migrations succeed on MySQL
-- [ ] Rollback works for reversible migrations
-- [ ] Factories produce valid isolated and related models
-- [ ] Reference seed data loads without bypassing inventory services
-- [ ] Schema includes all challenge-required tables
-- [ ] Persisted status enums belong to their actual tables and do not mix shipment, provider-submission, mock-provider-shipment, webhook-delivery, webhook-receipt-processing, or delivery-progress meanings
-- [ ] No categorical order-progress status exists before P3.1 defines and the owner approves its meaning
-- [ ] The smoke suite and applicable focused tests pass
-- [ ] Pint passes on changed PHP
+- [x] Smoke and critical test harnesses use the documented MySQL environment
+- [x] Provider contract, readonly shipping DTOs, and deterministic fake outcome mapping pass focused tests
+- [x] Fresh migrations succeed on MySQL
+- [x] Rollback works for reversible migrations
+- [x] Factories produce valid isolated and related models
+- [x] Reference seed data loads without bypassing inventory services
+- [x] Schema includes all challenge-required tables
+- [x] Persisted status enums belong to their actual tables and do not mix shipment, provider-submission, mock-provider-shipment, webhook-delivery, webhook-receipt-processing, or delivery-progress meanings
+- [x] No categorical order-progress status exists before P3.1 defines and the owner approves its meaning
+- [x] The smoke suite and applicable focused tests pass
+- [x] Pint passes on changed PHP

@@ -115,7 +115,7 @@ Do not begin it unless:
 
 ## Working Checklist
 
-- [ ] Phase 1 gate passed
+- [x] Phase 1 gate passed
 - [ ] Phase 2 gate passed
 - [ ] Phase 3 gate passed
 - [ ] Phase 4 gate passed
