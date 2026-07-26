@@ -2,6 +2,13 @@
 
 A Laravel 13 / MySQL implementation of the inventory core behind a multi-warehouse ERP. It prioritizes inventory correctness under concurrent reservations, retries, partial fulfillment, provider timeouts, and duplicate callbacks.
 
+## Submission Links
+
+- Canonical repository: [github.com/Moustafa-Ahmed/warehouse-inventory-engine](https://github.com/Moustafa-Ahmed/warehouse-inventory-engine)
+- Video walkthrough: pending owner recording and upload; see the [timed recording script](docs/VIDEO_WALKTHROUGH.md).
+
+The video line must contain the uploaded reviewer-accessible URL before final submission.
+
 The application includes:
 
 - Available, reserved, picked, packed, shipped, and delivered quantity tracking.
