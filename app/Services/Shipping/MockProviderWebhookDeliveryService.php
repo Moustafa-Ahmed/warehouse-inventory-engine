@@ -2,7 +2,10 @@
 
 namespace App\Services\Shipping;
 
+use App\Enums\MockProviderShipments\Status as ShipmentStatus;
 use App\Enums\MockProviderWebhooks\Status;
+use App\Enums\Shipping\EventType;
+use App\Models\MockProviderShipment;
 use App\Models\MockProviderWebhook;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
@@ -130,12 +133,41 @@ final class MockProviderWebhookDeliveryService
             'last_response_status_code' => null,
             'failure_reason' => null,
         ])->save();
+        $this->recordProviderEvent($webhook);
 
         return [
             'attempt_count' => $webhook->attempt_count,
             'external_event_id' => $webhook->external_event_id,
             'raw_body' => $webhook->raw_body,
         ];
+    }
+
+    private function recordProviderEvent(MockProviderWebhook $webhook): void
+    {
+        $shipment = MockProviderShipment::query()
+            ->lockForUpdate()
+            ->findOrFail($webhook->mock_provider_shipment_id);
+
+        if ($shipment->status === ShipmentStatus::PermanentlyRejected) {
+            return;
+        }
+
+        if ($webhook->event_type === EventType::ShipmentConfirmed) {
+            $shipment->forceFill([
+                'status' => $shipment->status === ShipmentStatus::Delivered
+                    ? ShipmentStatus::Delivered
+                    : ShipmentStatus::HandoffConfirmed,
+                'handoff_confirmed_at' => $shipment->handoff_confirmed_at
+                    ?? $webhook->occurred_at,
+            ])->save();
+
+            return;
+        }
+
+        $shipment->forceFill([
+            'status' => ShipmentStatus::Delivered,
+            'delivered_at' => $shipment->delivered_at ?? $webhook->occurred_at,
+        ])->save();
     }
 
     private function finishAcknowledged(

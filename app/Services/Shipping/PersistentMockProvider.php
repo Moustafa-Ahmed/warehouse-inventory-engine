@@ -11,6 +11,7 @@ use App\Enums\MockProviderWebhooks\Status as WebhookStatus;
 use App\Enums\Shipping\EventType;
 use App\Enums\Shipping\Outcome;
 use App\Enums\Shipping\Scenario;
+use App\Models\MockProviderScenarioOverride;
 use App\Models\MockProviderShipment;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
@@ -95,7 +96,14 @@ final class PersistentMockProvider implements ShippingProvider
 
     private function createShipment(Request $request): MockProviderShipment
     {
-        $scenario = $this->forcedScenario ?? $this->selectWeightedScenario();
+        $override = MockProviderScenarioOverride::query()
+            ->where('shipment_reference', $request->shipmentReference)
+            ->lockForUpdate()
+            ->first();
+        $scenario = $this->forcedScenario
+            ?? $override?->scenario
+            ?? $this->selectWeightedScenario();
+        $scenarioWasForced = $this->forcedScenario !== null || $override !== null;
         $permanentlyRejected = $scenario === Scenario::PermanentFailure;
         $shipment = new MockProviderShipment([
             'provider_request_key' => $request->providerRequestKey,
@@ -104,7 +112,7 @@ final class PersistentMockProvider implements ShippingProvider
                 : 'mock-'.hash('sha256', $request->providerRequestKey),
             'shipment_reference' => $request->shipmentReference,
             'scenario' => $scenario,
-            'scenario_was_forced' => $this->forcedScenario !== null,
+            'scenario_was_forced' => $scenarioWasForced,
         ]);
         $shipment->forceFill([
             'status' => $permanentlyRejected
@@ -120,6 +128,7 @@ final class PersistentMockProvider implements ShippingProvider
         ])->save();
 
         $this->persistWebhookIntents($shipment, $request);
+        $override?->delete();
 
         return $shipment;
     }
