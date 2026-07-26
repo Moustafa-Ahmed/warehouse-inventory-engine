@@ -12,6 +12,7 @@ This directory is the navigation hub for the challenge documentation. The busine
 ## Operations
 
 - [Local Shipping Runtime](local-shipping-runtime.md) — queue, callback URL, worker, and scheduler requirements for the persistent mock provider.
+- [Local Administrator](local-administrator.md) — environment-backed administrator seeding and login.
 
 ## Business Rules
 

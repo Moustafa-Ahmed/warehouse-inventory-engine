@@ -41,5 +41,6 @@ it('boots against the isolated MySQL test database', function () {
         ->and($shipmentItem->reservation->orderItem->order_id)->toBe($shipmentItem->shipment->order_id)
         ->and($shipmentItem->reservation->packed_quantity)->toBe($shipmentItem->quantity);
 
-    $this->get('/')->assertSuccessful();
+    $this->get('/')->assertRedirect(route('login'));
+    $this->get(route('login'))->assertSuccessful();
 });
