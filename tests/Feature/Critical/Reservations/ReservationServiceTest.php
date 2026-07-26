@@ -43,7 +43,7 @@ it('allocates available inventory and reports the partial result explicitly', fu
         ->and($transition->after_reserved_quantity)->toBe(6);
 });
 
-it('records zero allocation without creating a reservation or movement', function () {
+it('records zero allocation without creating a movement', function () {
     [$orderItem, $warehouse, $balance] = reservationContext(5, 0);
 
     $result = app(ReservationService::class)->reserve(new ReserveOrderItemInput(
@@ -57,10 +57,11 @@ it('records zero allocation without creating a reservation or movement', functio
         ->and($result->allocatedQuantity)->toBe(0)
         ->and($result->outstandingQuantity)->toBe(5)
         ->and($result->fullyAllocated)->toBeFalse()
-        ->and($result->reservationId)->toBeNull()
+        ->and($result->reservationId)->not->toBeNull()
         ->and($balance->refresh()->available_quantity)->toBe(0)
         ->and($orderItem->refresh()->reserved_quantity)->toBe(0)
-        ->and(Reservation::query()->doesntExist())->toBeTrue()
+        ->and(Reservation::query()->sole()->reserved_quantity)->toBe(0)
+        ->and(Reservation::query()->sole()->requested_quantity)->toBe(5)
         ->and(ReservationTransition::query()->doesntExist())->toBeTrue()
         ->and(InventoryMovement::query()->doesntExist())->toBeTrue()
         ->and(Operation::query()->count())->toBe(1);

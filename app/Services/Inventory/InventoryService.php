@@ -11,6 +11,7 @@ use App\DTOs\Inventory\TransferStockInput;
 use App\DTOs\Inventory\TransferStockResult;
 use App\Enums\Inventory\MovementBucket;
 use App\Enums\Operations\Type;
+use App\Jobs\AllocateBackorderJob;
 use App\Models\InventoryBalance;
 use App\Models\Operation;
 use App\Models\Product;
@@ -46,6 +47,11 @@ final class InventoryService
             ),
             attempts: 3,
         );
+
+        AllocateBackorderJob::dispatch(
+            warehouseId: $result['warehouse_id'],
+            runKey: 'stock-receipt-'.$result['operation_id'],
+        )->afterCommit();
 
         return new ReceiveStockResult(
             operationId: $result['operation_id'],

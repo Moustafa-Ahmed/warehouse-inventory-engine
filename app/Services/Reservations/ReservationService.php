@@ -93,6 +93,35 @@ final class ReservationService
         );
     }
 
+    public function allocateBackorders(
+        string $runKey,
+        ?int $warehouseId = null,
+        int $batchSize = 50,
+    ): int {
+        if (trim($runKey) === '') {
+            throw new InvalidArgumentException('A backorder allocation run key is required.');
+        }
+
+        if ($batchSize < 1 || $batchSize > 500) {
+            throw new InvalidArgumentException('Backorder batch size must be between 1 and 500.');
+        }
+
+        $warehouseIds = $warehouseId === null
+            ? $this->warehousesWithOutstandingReservationRequests()
+            : [$warehouseId];
+        $allocatedQuantity = 0;
+
+        foreach ($warehouseIds as $candidateWarehouseId) {
+            $allocatedQuantity += $this->allocateWarehouseBackorders(
+                $candidateWarehouseId,
+                $runKey,
+                $batchSize,
+            );
+        }
+
+        return $allocatedQuantity;
+    }
+
     private function validateReserveInput(ReserveOrderItemInput $input): void
     {
         if (trim($input->idempotencyKey) === '') {
@@ -126,7 +155,7 @@ final class ReservationService
     /**
      * @return array{
      *     operation_id: int,
-     *     reservation_id: int|null,
+     *     reservation_id: int,
      *     requested_quantity: int,
      *     allocated_quantity: int,
      *     outstanding_quantity: int,
@@ -167,17 +196,6 @@ final class ReservationService
         );
         $outstandingQuantity = $beforeProgress->outstandingQuantity - $allocatedQuantity;
 
-        if ($allocatedQuantity === 0) {
-            return [
-                'operation_id' => $operation->id,
-                'reservation_id' => null,
-                'requested_quantity' => $beforeProgress->outstandingQuantity,
-                'allocated_quantity' => 0,
-                'outstanding_quantity' => $outstandingQuantity,
-                'fully_allocated' => false,
-            ];
-        }
-
         $reservation = new Reservation([
             'order_item_id' => $orderItem->id,
             'warehouse_id' => $warehouse->id,
@@ -193,6 +211,17 @@ final class ReservationService
             'released_quantity' => 0,
             'expires_at' => null,
         ])->save();
+
+        if ($allocatedQuantity === 0) {
+            return [
+                'operation_id' => $operation->id,
+                'reservation_id' => $reservation->id,
+                'requested_quantity' => $beforeProgress->outstandingQuantity,
+                'allocated_quantity' => 0,
+                'outstanding_quantity' => $outstandingQuantity,
+                'fully_allocated' => false,
+            ];
+        }
 
         $this->movements->apply(
             $operation,
@@ -243,6 +272,220 @@ final class ReservationService
             'allocated_quantity' => $allocatedQuantity,
             'outstanding_quantity' => $afterProgress->outstandingQuantity,
             'fully_allocated' => $afterProgress->outstandingQuantity === 0,
+        ];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function warehousesWithOutstandingReservationRequests(): array
+    {
+        return Reservation::query()
+            ->where('status', Status::Open->value)
+            ->whereRaw(
+                'requested_quantity > reserved_quantity + picked_quantity + packed_quantity + shipped_quantity + released_quantity'
+            )
+            ->where(function ($query) {
+                $query->where('kind', Kind::Confirmed->value)
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->distinct()
+            ->orderBy('warehouse_id')
+            ->pluck('warehouse_id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
+    private function allocateWarehouseBackorders(
+        int $warehouseId,
+        string $runKey,
+        int $batchSize,
+    ): int {
+        $warehouse = Warehouse::query()->findOrFail($warehouseId);
+
+        if (! $warehouse->is_active) {
+            return 0;
+        }
+
+        $reservationIds = Reservation::query()
+            ->select('reservations.id')
+            ->join('order_items', 'order_items.id', '=', 'reservations.order_item_id')
+            ->where('reservations.warehouse_id', $warehouseId)
+            ->where('reservations.status', Status::Open->value)
+            ->whereRaw(
+                'reservations.requested_quantity > reservations.reserved_quantity + reservations.picked_quantity + reservations.packed_quantity + reservations.shipped_quantity + reservations.released_quantity'
+            )
+            ->whereRaw(
+                'order_items.ordered_quantity > order_items.cancelled_quantity + order_items.reserved_quantity + order_items.picked_quantity + order_items.packed_quantity + order_items.shipped_quantity'
+            )
+            ->where(function ($query) {
+                $query->where('reservations.kind', Kind::Confirmed->value)
+                    ->orWhere('reservations.expires_at', '>', now());
+            })
+            ->orderBy('order_items.created_at')
+            ->orderBy('order_items.id')
+            ->orderBy('reservations.created_at')
+            ->orderBy('reservations.id')
+            ->limit($batchSize)
+            ->pluck('reservations.id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+        $allocatedQuantity = 0;
+
+        foreach ($reservationIds as $reservationId) {
+            $allocatedQuantity += $this->allocateExistingReservation(
+                $reservationId,
+                $runKey,
+            );
+        }
+
+        return $allocatedQuantity;
+    }
+
+    private function allocateExistingReservation(
+        int $reservationId,
+        string $runKey,
+    ): int {
+        $idempotencyKey = 'backorder-reservation-'.hash(
+            'sha256',
+            "{$runKey}|{$reservationId}",
+        );
+        $result = DB::transaction(
+            fn (): array => $this->operations->execute(
+                Type::ReserveOrderItem,
+                $idempotencyKey,
+                [
+                    'reservation_id' => $reservationId,
+                    'allocation_run_key' => $runKey,
+                    'source' => 'backorder_allocator',
+                ],
+                fn (Operation $operation): array => $this->applyBackorderAllocation(
+                    $operation,
+                    $reservationId,
+                ),
+            ),
+            attempts: 3,
+        );
+
+        return $result['allocated_quantity'];
+    }
+
+    /**
+     * @return array{reservation_id: int, allocated_quantity: int}
+     */
+    private function applyBackorderAllocation(
+        Operation $operation,
+        int $reservationId,
+    ): array {
+        $orderItemId = Reservation::query()
+            ->whereKey($reservationId)
+            ->valueOrFail('order_item_id');
+        $orderItem = OrderItem::query()
+            ->lockForUpdate()
+            ->findOrFail($orderItemId);
+        $reservation = Reservation::query()
+            ->lockForUpdate()
+            ->findOrFail($reservationId);
+
+        if (
+            $reservation->status !== Status::Open
+            || (
+                $reservation->kind === Kind::Temporary
+                && ($reservation->expires_at === null || $reservation->expires_at->isPast())
+            )
+        ) {
+            return [
+                'reservation_id' => $reservation->id,
+                'allocated_quantity' => 0,
+            ];
+        }
+
+        $beforeProgress = $this->progressFor($orderItem);
+        $remainingRequestedQuantity = $reservation->requested_quantity
+            - $reservation->reserved_quantity
+            - $reservation->picked_quantity
+            - $reservation->packed_quantity
+            - $reservation->shipped_quantity
+            - $reservation->released_quantity;
+
+        if ($beforeProgress->outstandingQuantity === 0 || $remainingRequestedQuantity <= 0) {
+            return [
+                'reservation_id' => $reservation->id,
+                'allocated_quantity' => 0,
+            ];
+        }
+
+        InventoryBalance::query()->firstOrCreate([
+            'product_id' => $orderItem->product_id,
+            'warehouse_id' => $reservation->warehouse_id,
+        ]);
+        $balance = InventoryBalance::query()
+            ->where('product_id', $orderItem->product_id)
+            ->where('warehouse_id', $reservation->warehouse_id)
+            ->lockForUpdate()
+            ->sole();
+        $allocatedQuantity = min(
+            $balance->available_quantity,
+            $beforeProgress->outstandingQuantity,
+            $remainingRequestedQuantity,
+        );
+
+        if ($allocatedQuantity === 0) {
+            return [
+                'reservation_id' => $reservation->id,
+                'allocated_quantity' => 0,
+            ];
+        }
+
+        $beforeReservedQuantity = $reservation->reserved_quantity;
+
+        $this->movements->apply(
+            $operation,
+            new Movement(
+                productId: $orderItem->product_id,
+                quantity: $allocatedQuantity,
+                sourceWarehouseId: $reservation->warehouse_id,
+                sourceBucket: MovementBucket::Available,
+                destinationWarehouseId: $reservation->warehouse_id,
+                destinationBucket: MovementBucket::Reserved,
+                businessReferenceType: 'reservation',
+                businessReferenceId: (string) $reservation->id,
+                metadata: ['source' => 'backorder_allocator'],
+            ),
+        );
+
+        $reservation->forceFill([
+            'reserved_quantity' => $beforeReservedQuantity + $allocatedQuantity,
+        ])->save();
+        $orderItem->forceFill([
+            'reserved_quantity' => $beforeProgress->reservedQuantity + $allocatedQuantity,
+        ])->save();
+
+        ReservationTransition::query()->create([
+            'reservation_id' => $reservation->id,
+            'operation_id' => $operation->id,
+            'actor_id' => null,
+            'source' => 'backorder_allocator',
+            'reason' => 'Newly available inventory reserved',
+            'before_kind' => $reservation->kind,
+            'after_kind' => $reservation->kind,
+            'before_status' => $reservation->status,
+            'after_status' => $reservation->status,
+            'before_reserved_quantity' => $beforeReservedQuantity,
+            'after_reserved_quantity' => $reservation->reserved_quantity,
+            'before_picked_quantity' => $reservation->picked_quantity,
+            'after_picked_quantity' => $reservation->picked_quantity,
+            'before_packed_quantity' => $reservation->packed_quantity,
+            'after_packed_quantity' => $reservation->packed_quantity,
+            'before_shipped_quantity' => $reservation->shipped_quantity,
+            'after_shipped_quantity' => $reservation->shipped_quantity,
+            'before_released_quantity' => $reservation->released_quantity,
+            'after_released_quantity' => $reservation->released_quantity,
+        ]);
+
+        return [
+            'reservation_id' => $reservation->id,
+            'allocated_quantity' => $allocatedQuantity,
         ];
     }
 
