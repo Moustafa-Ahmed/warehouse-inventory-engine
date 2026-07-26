@@ -7,6 +7,8 @@ use App\DTOs\Inventory\AdjustInventoryResult;
 use App\DTOs\Inventory\Movement;
 use App\DTOs\Inventory\ReceiveStockInput;
 use App\DTOs\Inventory\ReceiveStockResult;
+use App\DTOs\Inventory\TransferStockInput;
+use App\DTOs\Inventory\TransferStockResult;
 use App\Enums\Inventory\MovementBucket;
 use App\Enums\Operations\Type;
 use App\Models\InventoryBalance;
@@ -86,6 +88,38 @@ final class InventoryService
         );
     }
 
+    public function transfer(TransferStockInput $input): TransferStockResult
+    {
+        $this->validateTransferInput($input);
+
+        $result = DB::transaction(
+            fn (): array => $this->operations->execute(
+                Type::TransferStock,
+                $input->idempotencyKey,
+                [
+                    'product_id' => $input->productId,
+                    'source_warehouse_id' => $input->sourceWarehouseId,
+                    'destination_warehouse_id' => $input->destinationWarehouseId,
+                    'quantity' => $input->quantity,
+                    'actor_id' => $input->actorId,
+                ],
+                fn (Operation $operation): array => $this->applyTransfer($operation, $input),
+            ),
+            attempts: 3,
+        );
+
+        return new TransferStockResult(
+            operationId: $result['operation_id'],
+            movementId: $result['movement_id'],
+            productId: $result['product_id'],
+            sourceWarehouseId: $result['source_warehouse_id'],
+            destinationWarehouseId: $result['destination_warehouse_id'],
+            transferredQuantity: $result['transferred_quantity'],
+            sourceAvailableQuantity: $result['source_available_quantity'],
+            destinationAvailableQuantity: $result['destination_available_quantity'],
+        );
+    }
+
     private function validateReceiveStockInput(ReceiveStockInput $input): void
     {
         if ($input->quantity < 1) {
@@ -109,6 +143,21 @@ final class InventoryService
 
         if (trim($input->reason) === '') {
             throw new InvalidArgumentException('An adjustment reason is required.');
+        }
+
+        if ($input->idempotencyKey === '') {
+            throw new InvalidArgumentException('An idempotency key is required.');
+        }
+    }
+
+    private function validateTransferInput(TransferStockInput $input): void
+    {
+        if ($input->quantity < 1) {
+            throw new InvalidArgumentException('Transfer quantity must be positive.');
+        }
+
+        if ($input->sourceWarehouseId === $input->destinationWarehouseId) {
+            throw new InvalidArgumentException('Source and destination warehouses must be different.');
         }
 
         if ($input->idempotencyKey === '') {
@@ -225,6 +274,65 @@ final class InventoryService
             'quantity_change' => $input->quantityChange,
             'available_quantity' => $availableQuantity,
             'reason' => $input->reason,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     operation_id: int,
+     *     movement_id: int,
+     *     product_id: int,
+     *     source_warehouse_id: int,
+     *     destination_warehouse_id: int,
+     *     transferred_quantity: int,
+     *     source_available_quantity: int,
+     *     destination_available_quantity: int
+     * }
+     */
+    private function applyTransfer(Operation $operation, TransferStockInput $input): array
+    {
+        $product = Product::query()->findOrFail($input->productId);
+        $sourceWarehouse = Warehouse::query()->findOrFail($input->sourceWarehouseId);
+        $destinationWarehouse = Warehouse::query()->findOrFail($input->destinationWarehouseId);
+
+        if (! $product->is_active) {
+            throw new InvalidArgumentException('Stock cannot be transferred for an inactive product.');
+        }
+
+        if (! $sourceWarehouse->is_active || ! $destinationWarehouse->is_active) {
+            throw new InvalidArgumentException('Stock can be transferred only between active warehouses.');
+        }
+
+        $movement = $this->movements->apply(
+            $operation,
+            new Movement(
+                productId: $product->id,
+                quantity: $input->quantity,
+                sourceWarehouseId: $sourceWarehouse->id,
+                sourceBucket: MovementBucket::Available,
+                destinationWarehouseId: $destinationWarehouse->id,
+                destinationBucket: MovementBucket::Available,
+                businessReferenceType: 'warehouse_transfer',
+                businessReferenceId: (string) $operation->id,
+                actorId: $input->actorId,
+            ),
+        );
+
+        $balances = InventoryBalance::query()
+            ->where('product_id', $product->id)
+            ->whereIn('warehouse_id', [$sourceWarehouse->id, $destinationWarehouse->id])
+            ->get()
+            ->keyBy('warehouse_id');
+
+        return [
+            'operation_id' => $operation->id,
+            'movement_id' => $movement->id,
+            'product_id' => $product->id,
+            'source_warehouse_id' => $sourceWarehouse->id,
+            'destination_warehouse_id' => $destinationWarehouse->id,
+            'transferred_quantity' => $input->quantity,
+            'source_available_quantity' => $balances->get($sourceWarehouse->id)->available_quantity,
+            'destination_available_quantity' => $balances->get($destinationWarehouse->id)->available_quantity,
         ];
     }
 }
